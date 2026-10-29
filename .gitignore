@@ -1,0 +1,37 @@
+# Frontend - React / Vite
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Backend - Java / Spring Boot
+target/
+*.class
+
+# API simulada - Python / FastAPI
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Variables de entorno y credenciales
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# Archivos de registro
+*.log
+
+# Configuraciones locales de IDE
+.idea/
+.vscode/
+
+# Archivos temporales de Windows
+Thumbs.db
+Desktop.ini
