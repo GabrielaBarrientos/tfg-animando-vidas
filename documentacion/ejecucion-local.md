@@ -94,6 +94,8 @@ El usuario autenticado puede consultar su identidad en:
 
     http://localhost:8080/api/auth/me
 
+Las sesiones de usuario tienen un tiempo máximo de inactividad de 30 minutos, administrado por Spring Boot.
+
 ## 6. Iniciar frontend
 
 Desde la carpeta frontend, con las dependencias instaladas:
