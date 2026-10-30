@@ -11,14 +11,19 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+            UsuarioAutorizadoOidcUserService oidcUserService) throws Exception {
 
         http
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/api/health").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2Login(Customizer.withDefaults())
+            .oauth2Login(oauth2 -> oauth2
+                .userInfoEndpoint(userInfo -> userInfo
+                    .oidcUserService(oidcUserService)
+                )
+            )
             .csrf(Customizer.withDefaults());
 
         return http.build();

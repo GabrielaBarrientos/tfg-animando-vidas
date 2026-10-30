@@ -20,6 +20,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 @WebMvcTest({
         AuthController.class,
         HealthController.class
@@ -28,10 +31,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         SecurityConfig.class,
         AuthenticationSecurityTests.TestOAuthConfig.class
 })
+
 class AuthenticationSecurityTests {
 
     @Autowired
     private MockMvc mockMvc;
+    @MockitoBean
+    private UsuarioAutorizadoOidcUserService oidcUserService;
 
     @Test
     void healthEndpointShouldBePublic() throws Exception {
@@ -49,18 +55,25 @@ class AuthenticationSecurityTests {
 
     @Test
     void authenticatedUserShouldRetrieveIdentity() throws Exception {
-        mockMvc.perform(get("/api/auth/me")
-                .with(oidcLogin()
-                    .idToken(token -> token
-                        .claim("sub", "test-user-123")
-                        .claim("name", "Usuario de prueba")
-                        .claim("email", "test@example.com")
+
+        mockMvc.perform(
+                get("/api/auth/me")
+                    .with(oidcLogin()
+                        .authorities(
+                            new SimpleGrantedAuthority("ROLE_ADMINISTRADOR")
+                        )
+                        .idToken(token -> token
+                            .claim("sub", "test-user-123")
+                            .claim("name", "Usuario de prueba")
+                            .claim("email", "test@example.com")
+                        )
                     )
-                ))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.subject").value("test-user-123"))
-                .andExpect(jsonPath("$.name").value("Usuario de prueba"))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+            )
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.subject").value("test-user-123"))
+            .andExpect(jsonPath("$.name").value("Usuario de prueba"))
+            .andExpect(jsonPath("$.email").value("test@example.com"))
+            .andExpect(jsonPath("$.rol").value("ADMINISTRADOR"));
     }
 
     @TestConfiguration(proxyBeanMethods = false)
