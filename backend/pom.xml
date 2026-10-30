@@ -60,6 +60,19 @@
 			<artifactId>spring-boot-starter-restclient</artifactId>
 		</dependency>
 
+		<!-- Autenticación mediante OAuth 2.0 y OpenID Connect -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-oauth2-client</artifactId>
+		</dependency>
+
+		<!-- Pruebas automatizadas de Spring Security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
