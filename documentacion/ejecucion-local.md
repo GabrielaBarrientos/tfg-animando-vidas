@@ -63,6 +63,37 @@ El backend utiliza la propiedad educational-platform.base-url para comunicarse c
 
 Por defecto apunta a http://127.0.0.1:8000.
 
+### Autenticación con Google
+
+El backend utiliza Google OpenID Connect para autenticar usuarios.
+
+Es necesario configurar un cliente OAuth 2.0 de tipo Web application en Google Cloud.
+
+URI de redirección autorizada:
+
+    http://localhost:8080/login/oauth2/code/google
+
+Antes de iniciar Spring Boot, configurar las siguientes variables en la misma terminal PowerShell:
+
+    $env:GOOGLE_CLIENT_ID = Read-Host "Google Client ID"
+
+    $googleSecret = Read-Host "Google Client Secret" -AsSecureString
+    $env:GOOGLE_CLIENT_SECRET = [System.Net.NetworkCredential]::new("", $googleSecret).Password
+    Remove-Variable googleSecret
+
+Las credenciales reales no deben incorporarse al repositorio Git.
+
+Durante el desarrollo, la cuenta utilizada para iniciar sesión debe estar habilitada como usuario
+de prueba en Google Auth Platform.
+
+El inicio de sesión se encuentra disponible en:
+
+    http://localhost:8080/oauth2/authorization/google
+
+El usuario autenticado puede consultar su identidad en:
+
+    http://localhost:8080/api/auth/me
+
 ## 6. Iniciar frontend
 
 Desde la carpeta frontend, con las dependencias instaladas:
