@@ -15,6 +15,17 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+
+import org.tfg.backend.proyecto.Proyecto;
+
+
 @Entity
 @Table(name = "usuario")
 public class Usuario {
@@ -48,6 +59,15 @@ public class Usuario {
 
     @Column(name = "f_actualizacion", nullable = false)
     private OffsetDateTime fechaActualizacion;
+
+    @Column(name = "id_empresa")
+    private Long idEmpresa;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "usuario_proyecto",
+        joinColumns = @JoinColumn(name = "id_usuario"),
+        inverseJoinColumns = @JoinColumn(name = "id_proyecto"))
+    private Set<Proyecto> proyectosAsignados = new HashSet<>();
 
     protected Usuario() {
         // Constructor requerido por JPA
@@ -125,5 +145,12 @@ public class Usuario {
 
     public OffsetDateTime getFechaActualizacion() {
         return fechaActualizacion;
+    }
+
+    public Long getIdEmpresa() {
+        return idEmpresa;
+    }
+    public Set<Proyecto> getProyectosAsignados() {
+        return proyectosAsignados;
     }
 }
