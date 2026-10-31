@@ -37,23 +37,25 @@ public class UsuarioAutorizadoOidcUserService implements OAuth2UserService<OidcU
 
     OidcUser autorizarYAsignarRol(OidcUser oidcUser) {
 
-    var usuario = autorizacionService
-            .buscarUsuarioAutorizado(oidcUser.getSubject())
-            .orElseThrow(() -> new OAuth2AuthenticationException(
-                    new OAuth2Error("user_not_authorized"),
-                    "El usuario no está autorizado para acceder"
-            ));
+        var usuario = autorizacionService
+                .buscarUsuarioAutorizado(oidcUser.getSubject())
+                .orElseThrow(() -> new OAuth2AuthenticationException(
+                        new OAuth2Error("user_not_authorized"),
+                        "El usuario no está autorizado para acceder"
+                ));
 
-    var autoridades = new HashSet<GrantedAuthority>(
-            oidcUser.getAuthorities()
-    );
+        var autoridades = new HashSet<GrantedAuthority>(
+                oidcUser.getAuthorities()
+        );
 
-    autoridades.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+        autoridades.add(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
 
-    return new DefaultOidcUser(
-            autoridades,
-            oidcUser.getIdToken(),
-            oidcUser.getUserInfo(),
-            "sub"
-    );
+        return new DefaultOidcUser(
+                autoridades,
+                oidcUser.getIdToken(),
+                oidcUser.getUserInfo(),
+                "sub"
+        );
+    }
+
 }
