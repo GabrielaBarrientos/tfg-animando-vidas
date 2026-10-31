@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react';
 
+import AppLayout from './components/AppLayout';
 import ProyectosPage from './pages/ProyectosPage';
 import CrearProyectoPage from './pages/CrearProyectoPage';
 
@@ -9,76 +10,57 @@ import {
   type UsuarioActual
 } from './services/authApi';
 
-type Pantalla = 'listado' | 'alta';
-
 function App() {
+  // Usuario autenticado mediante Google.
+  const [usuario, setUsuario] = useState<UsuarioActual | null>(null);
 
-  const [usuario, setUsuario] =
-    useState<UsuarioActual | null>(null);
+  // Indica si se está verificando la sesión.
+  const [cargandoUsuario, setCargandoUsuario] = useState(true);
 
-  const [cargandoUsuario, setCargandoUsuario] =
-    useState(true);
+  // Pantalla que se está mostrando.
+  const [pantalla, setPantalla] = useState<'listado' | 'alta'>('listado');
 
-  const [pantalla, setPantalla] =
-    useState<Pantalla>('listado');
+  // Permite actualizar el listado después de crear un proyecto.
+  const [versionListado, setVersionListado] = useState(0);
 
-  const [versionListado, setVersionListado] =
-    useState(0);
-
+  // Verificar la sesión al iniciar la aplicación.
   useEffect(() => {
-
-    let activo = true;
-
     async function cargarUsuario() {
-
       try {
-        const resultado = await obtenerUsuarioActual();
-
-        if (activo) {
-          setUsuario(resultado);
-        }
-
+        const usuarioActual = await obtenerUsuarioActual();
+        setUsuario(usuarioActual);
       } catch {
-        if (activo) {
-          setUsuario(null);
-        }
-
+        setUsuario(null);
       } finally {
-        if (activo) {
-          setCargandoUsuario(false);
-        }
+        setCargandoUsuario(false);
       }
     }
 
-    cargarUsuario();
-
-    return () => {
-      activo = false;
-    };
-
+    void cargarUsuario();
   }, []);
 
+  // Navegar al formulario de alta.
   function mostrarAltaProyecto() {
     setPantalla('alta');
   }
 
+  // Regresar al listado de proyectos.
   function volverAlListado() {
     setPantalla('listado');
   }
 
+  // Regresar al listado y actualizarlo después del alta.
   function manejarProyectoCreado() {
-
-    // Forzar la actualización del listado.
-    setVersionListado(versionListado + 1);
-
-    // Regresar a la pantalla de proyectos.
+    setVersionListado(versionActual => versionActual + 1);
     setPantalla('listado');
   }
 
+  // Mientras se verifica la sesión.
   if (cargandoUsuario) {
     return <p>Verificando usuario...</p>;
   }
 
+  // Usuario no autenticado o no autorizado.
   if (usuario === null) {
     return (
       <main>
@@ -95,23 +77,33 @@ function App() {
     );
   }
 
-  if (pantalla === 'alta' &&
-      usuario.rol === 'ADMINISTRADOR') {
-
+  // Pantalla 3: Alta de proyecto (solo administradores).
+  if (pantalla === 'alta' && usuario.rol === 'ADMINISTRADOR') {
     return (
-      <CrearProyectoPage
-        onCancelar={volverAlListado}
-        onProyectoCreado={manejarProyectoCreado}
-      />
+      <AppLayout
+        usuario={usuario}
+        onIrAProyectos={volverAlListado}
+      >
+        <CrearProyectoPage
+          onCancelar={volverAlListado}
+          onProyectoCreado={manejarProyectoCreado}
+        />
+      </AppLayout>
     );
   }
 
+  // Pantalla 2: Listado de proyectos.
   return (
-    <ProyectosPage
-      key={versionListado}
-      puedeCrearProyecto={usuario.rol === 'ADMINISTRADOR'}
-      onNuevoProyecto={mostrarAltaProyecto}
-    />
+    <AppLayout
+      usuario={usuario}
+      onIrAProyectos={volverAlListado}
+    >
+      <ProyectosPage
+        key={versionListado}
+        puedeCrearProyecto={usuario.rol === 'ADMINISTRADOR'}
+        onNuevoProyecto={mostrarAltaProyecto}
+      />
+    </AppLayout>
   );
 }
 

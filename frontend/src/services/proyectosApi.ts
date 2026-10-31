@@ -8,6 +8,7 @@ export interface Proyecto {
   anio: number;
   descripcion: string | null;
   idEmpresa: number;
+  nombreEmpresa: string;
   estado: string;
 }
 

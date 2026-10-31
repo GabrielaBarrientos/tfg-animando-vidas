@@ -8,6 +8,7 @@ public class ProyectoResponse {
     private Short anio;
     private String descripcion;
     private Long idEmpresa;
+    private String nombreEmpresa;
     private String estado;
     private String nombreCompleto;
 
@@ -17,11 +18,15 @@ public class ProyectoResponse {
         this.nombre = proyecto.getNombre();
         this.anio = proyecto.getAnio();
         this.descripcion = proyecto.getDescripcion();
+
         this.idEmpresa = proyecto.getEmpresa().getIdEmpresa();
+        this.nombreEmpresa = proyecto.getEmpresa().getNombre();
+
         this.estado = proyecto.getEstado().name();
+
         this.nombreCompleto = proyecto.getNombre()
-        + " - " + proyecto.getEmpresa().getNombre()
-        + " - " + proyecto.getAnio();
+                + " - " + proyecto.getEmpresa().getNombre()
+                + " - " + proyecto.getAnio();
     }
 
     public Long getIdProyecto() {
@@ -44,10 +49,15 @@ public class ProyectoResponse {
         return idEmpresa;
     }
 
+    public String getNombreEmpresa() {
+        return nombreEmpresa;
+    }
+
     public String getEstado() {
         return estado;
     }
+
     public String getNombreCompleto() {
-    return nombreCompleto;
+        return nombreCompleto;
     }
 }
