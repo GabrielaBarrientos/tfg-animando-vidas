@@ -1,6 +1,8 @@
 
 import { useEffect, useState } from 'react';
 
+import { SesionExpiradaError } from '../services/erroresApi';
+
 import {
   Alert,
   Box,
@@ -36,6 +38,8 @@ import { colores } from '../theme';
 interface ProyectosPageProps {
   puedeCrearProyecto: boolean;
   onNuevoProyecto: () => void;
+  onPlanificarProyecto(proyecto: Proyecto): void;
+  onSesionExpirada: () => void;
 }
 
 function obtenerNombreEstado(estado: string): string {
@@ -57,9 +61,39 @@ function obtenerNombreEstado(estado: string): string {
   }
 }
 
+interface AccesoPlanificacionProps {
+  proyecto: Proyecto;
+  onPlanificarProyecto(proyecto: Proyecto): void;
+}
+
+function AccesoPlanificacion({
+  proyecto,
+  onPlanificarProyecto
+}: AccesoPlanificacionProps) {
+
+  function abrirPlanificacion() {
+    onPlanificarProyecto(proyecto);
+  }
+
+  return (
+    <IconButton
+      size="small"
+      title="Continuar planificación"
+      aria-label={'Continuar planificación de ' + proyecto.nombre}
+      onClick={abrirPlanificacion}
+    >
+      <ChevronRightIcon
+        sx={{ color: colores.textoPrimario }}
+      />
+    </IconButton>
+  );
+}
+
 function ProyectosPage({
   puedeCrearProyecto,
-  onNuevoProyecto
+  onNuevoProyecto,
+  onPlanificarProyecto,
+  onSesionExpirada
 }: ProyectosPageProps) {
 
   // Datos recuperados del backend.
@@ -77,21 +111,34 @@ function ProyectosPage({
   const [filasPorPagina, setFilasPorPagina] = useState(10);
 
   // Consultar los proyectos cuando se abre la pantalla.
-  useEffect(() => {
+  useEffect(function cargarProyectosAlAbrir() {
+
     let componenteActivo = true;
 
     async function cargarProyectos() {
+
       try {
         const proyectosObtenidos = await obtenerProyectos();
 
         if (componenteActivo) {
           setProyectos(proyectosObtenidos);
         }
-      } catch {
-        if (componenteActivo) {
-          setError('No se pudo obtener el listado de proyectos.');
+
+      } catch (excepcion) {
+
+        if (!componenteActivo) {
+          return;
         }
+
+        if (excepcion instanceof SesionExpiradaError) {
+          onSesionExpirada();
+          return;
+        }
+
+        setError('No se pudo obtener el listado de proyectos.');
+
       } finally {
+
         if (componenteActivo) {
           setCargando(false);
         }
@@ -100,10 +147,14 @@ function ProyectosPage({
 
     void cargarProyectos();
 
-    return () => {
+    function cancelarCarga() {
       componenteActivo = false;
-    };
-  }, []);
+    }
+
+    return cancelarCarga;
+
+  }, [onSesionExpirada]);
+
 
   // Obtener las empresas de los proyectos visibles.
   // No consultamos /api/empresas porque ese endpoint
@@ -446,13 +497,20 @@ function ProyectosPage({
                       </TableCell>
 
                       <TableCell align="right">
-                        <ChevronRightIcon
-                          aria-hidden="true"
-                          sx={{
-                            color: colores.textoPrimario
-                          }}
-                        />
+                        {puedeCrearProyecto &&
+                        proyecto.estado === 'PENDIENTE_PLANIFICACION' ? (
+                          <AccesoPlanificacion
+                            proyecto={proyecto}
+                            onPlanificarProyecto={onPlanificarProyecto}
+                          />
+                        ) : (
+                          <ChevronRightIcon
+                            aria-hidden="true"
+                            sx={{ color: colores.textoPrimario }}
+                          />
+                        )}
                       </TableCell>
+
                     </TableRow>
                   ))}
 

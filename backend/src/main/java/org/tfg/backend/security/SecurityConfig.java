@@ -26,6 +26,7 @@ public class SecurityConfig {
                     .oidcUserService(oidcUserService))
                 .defaultSuccessUrl("http://localhost:5173/", true)
             )
+            .exceptionHandling(new ApiExceptionHandlingCustomizer())
             .csrf(Customizer.withDefaults());
 
         return http.build();

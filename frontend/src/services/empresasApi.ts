@@ -1,4 +1,6 @@
 
+import { verificarSesionEnRespuesta } from './erroresApi';
+
 export interface Empresa {
   idEmpresa: number;
   nombre: string;
@@ -10,6 +12,9 @@ export async function obtenerEmpresas(): Promise<Empresa[]> {
     method: 'GET',
     credentials: 'include'
   });
+
+  // Verificar si la sesión del usuario finalizó
+  await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
     throw new Error('No se pudo obtener el listado de empresas');
