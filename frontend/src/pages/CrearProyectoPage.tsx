@@ -1,6 +1,8 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 
+import { SesionExpiradaError } from '../services/erroresApi';
+
 import {
   Alert,
   Box,
@@ -40,6 +42,7 @@ import { colores } from '../theme';
 interface CrearProyectoPageProps {
   onCancelar: () => void;
   onProyectoCreado: (proyecto: Proyecto) => void;
+   onSesionExpirada: () => void;
 }
 
 // Etapas del proceso de configuración del proyecto.
@@ -52,7 +55,8 @@ const etapas = [
 
 function CrearProyectoPage({
   onCancelar,
-  onProyectoCreado
+  onProyectoCreado,
+  onSesionExpirada
 }: CrearProyectoPageProps) {
 
   const anioActual = new Date().getFullYear();
@@ -80,12 +84,20 @@ function CrearProyectoPage({
         if (activo) {
           setEmpresas(resultado);
         }
-      } catch {
-        if (activo) {
-          setError(
-            'No se pudieron cargar las empresas financiadoras.'
-          );
+      } catch (excepcion) {
+
+        if (!activo) {
+          return;
         }
+
+        if (excepcion instanceof SesionExpiradaError) {
+          onSesionExpirada();
+          return;
+        }
+
+        setError(
+          'No se pudieron cargar las empresas financiadoras.'
+        );
       } finally {
         if (activo) {
           setCargandoEmpresas(false);
@@ -98,7 +110,7 @@ function CrearProyectoPage({
     return () => {
       activo = false;
     };
-  }, []);
+  }, [onSesionExpirada]);
 
   // Validar y registrar el proyecto.
   async function guardarProyecto(
@@ -146,7 +158,13 @@ function CrearProyectoPage({
 
       onProyectoCreado(proyectoCreado);
 
-    } catch {
+    } catch (excepcion) {
+
+      if (excepcion instanceof SesionExpiradaError) {
+        onSesionExpirada();
+        return;
+      }
+
       setError('No se pudo registrar el proyecto.');
 
     } finally {

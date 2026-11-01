@@ -1,3 +1,4 @@
+import { verificarSesionEnRespuesta } from './erroresApi';
 
 export interface CsrfToken {
   token: string;
@@ -11,6 +12,8 @@ export async function obtenerTokenCsrf(): Promise<CsrfToken> {
     method: 'GET',
     credentials: 'include'
   });
+
+  await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
     throw new Error('No se pudo obtener el token CSRF');

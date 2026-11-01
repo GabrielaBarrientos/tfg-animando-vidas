@@ -1,5 +1,6 @@
 
 import { obtenerTokenCsrf } from './csrfApi';
+import { verificarSesionEnRespuesta } from './erroresApi';
 
 export interface Proyecto {
   idProyecto: number;
@@ -18,6 +19,8 @@ export async function obtenerProyectos(): Promise<Proyecto[]> {
     method: 'GET',
     credentials: 'include'
   });
+
+  await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
     throw new Error('No se pudo obtener el listado de proyectos');
@@ -53,6 +56,8 @@ export async function crearProyecto(datos: CrearProyectoRequest): Promise<Proyec
     headers: cabeceras,
     body: JSON.stringify(datos)
   });
+
+  await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
     throw new Error('No se pudo crear el proyecto');

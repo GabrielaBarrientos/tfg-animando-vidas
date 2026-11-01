@@ -49,8 +49,9 @@ class AuthenticationSecurityTests {
 
     @Test
     void currentUserShouldRequireAuthentication() throws Exception {
+
         mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().is3xxRedirection());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -90,4 +91,26 @@ class AuthenticationSecurityTests {
             return new InMemoryClientRegistrationRepository(google);
         }
     }
+
+    @Test
+    void csrfEndpointShouldRequireAuthentication() throws Exception {
+
+        mockMvc.perform(get("/api/csrf"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void projectsEndpointShouldRequireAuthentication() throws Exception {
+
+        mockMvc.perform(get("/api/proyectos"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void googleLoginShouldStillRedirect() throws Exception {
+
+        mockMvc.perform(get("/oauth2/authorization/google"))
+                .andExpect(status().is3xxRedirection());
+    }
+
 }

@@ -1,3 +1,4 @@
+import { verificarSesionEnRespuesta } from './erroresApi';
 
 export interface UsuarioActual {
   subject: string;
@@ -12,6 +13,8 @@ export async function obtenerUsuarioActual(): Promise<UsuarioActual> {
     method: 'GET',
     credentials: 'include'
   });
+
+  await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
     throw new Error('No se pudo obtener el usuario autenticado');
