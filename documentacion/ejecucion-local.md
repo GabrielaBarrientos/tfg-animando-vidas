@@ -3,7 +3,7 @@
 
 ## 1. Componentes
 
-El prototipo de TFG está compuesto por:
+El prototipo está compuesto por:
 
 - Frontend: React, TypeScript y Vite.
 - Backend principal: Java y Spring Boot.

@@ -1,5 +1,5 @@
 
-# TFG - Animando Vidas
+# TFG - Sistema de gestión y seguimiento de talleres educativos de Animando Vidas
 
 ## Descripción
 
@@ -30,7 +30,7 @@ Además, incorpora el análisis cualitativo de respuestas abiertas mediante un m
 
 ## Metodología de desarrollo
 
-El proyecto utiliza un enfoque de desarrollo incremental.
+El proyecto utiliza un enfoque de desarrollo iterativo incremental.
 
 Cada funcionalidad comprende análisis, diseño técnico, implementación, integración y pruebas antes de considerarse terminada.
 
@@ -38,7 +38,7 @@ Cada funcionalidad comprende análisis, diseño técnico, implementación, integ
 
 En desarrollo.
 
-Etapa actual: configuración de la base técnica del proyecto.
+Etapa actual: implementación de la gestión de proyectos.
 
 ## Ejecución local
 
