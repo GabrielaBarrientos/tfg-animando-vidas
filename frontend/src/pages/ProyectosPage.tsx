@@ -37,8 +37,10 @@ import { colores } from '../theme';
 
 interface ProyectosPageProps {
   puedeCrearProyecto: boolean;
+  puedeConsultarDocentes: boolean;
   onNuevoProyecto: () => void;
   onPlanificarProyecto(proyecto: Proyecto): void;
+  onConsultarDocentes(proyecto: Proyecto): void;
   onSesionExpirada: () => void;
 }
 
@@ -91,8 +93,10 @@ function AccesoPlanificacion({
 
 function ProyectosPage({
   puedeCrearProyecto,
+  puedeConsultarDocentes,
   onNuevoProyecto,
   onPlanificarProyecto,
+  onConsultarDocentes,
   onSesionExpirada
 }: ProyectosPageProps) {
 
@@ -224,6 +228,13 @@ function ProyectosPage({
     setPagina(0);
   }
 
+  function limpiarFiltros() {
+    setBusquedaNombre('');
+    setEmpresaSeleccionada('');
+    setAnioSeleccionado('');
+    setPagina(0);
+  }
+
   return (
     <Box
       component="section"
@@ -307,7 +318,7 @@ function ProyectosPage({
               setPagina(0);
             }}
             sx={{
-              width: 376,
+              width: 500,
               maxWidth: '100%'
             }}
             slotProps={{
@@ -382,6 +393,16 @@ function ProyectosPage({
             ))}
           </TextField>
 
+          {/* Restablecer todos los filtros del listado */}
+          <Button
+            variant="outlined"
+            onClick={limpiarFiltros}
+            disabled={busquedaNombre === '' && empresaSeleccionada === '' && anioSeleccionado === ''}
+            sx={{ ml: { md: 'auto' }, height: 42 }}
+          >
+            Limpiar filtros
+          </Button>
+
           {/* Alta: solo administradores */}
           {puedeCrearProyecto && (
             <Button
@@ -389,8 +410,7 @@ function ProyectosPage({
               onClick={onNuevoProyecto}
               sx={{
                 minWidth: 179,
-                height: 42,
-                ml: 'auto'
+                height: 42
               }}
             >
               Nuevo proyecto
@@ -506,6 +526,15 @@ function ProyectosPage({
                             proyecto={proyecto}
                             onPlanificarProyecto={onPlanificarProyecto}
                           />
+                        ) : puedeConsultarDocentes && (proyecto.estado === 'PLANIFICADO' || proyecto.estado === 'EN_CURSO' || proyecto.estado === 'FINALIZADO') ? (
+                          <IconButton
+                            size="small"
+                            title="Consultar docentes del proyecto"
+                            aria-label={'Consultar docentes de ' + proyecto.nombre}
+                            onClick={function abrirDocentes() { onConsultarDocentes(proyecto); }}
+                          >
+                            <ChevronRightIcon sx={{ color: colores.textoPrimario }} />
+                          </IconButton>
                         ) : (
                           <ChevronRightIcon
                             aria-hidden="true"

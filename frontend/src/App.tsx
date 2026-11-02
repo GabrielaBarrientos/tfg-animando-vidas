@@ -7,8 +7,9 @@ import CrearProyectoPage from './pages/CrearProyectoPage';
 import PlanificacionProyectoPage from './pages/PlanificacionProyectoPage';
 import SeguimientoProyectoPage from './pages/SeguimientoProyectoPage';
 import DatosGeneralesProyectoPage from './pages/DatosGeneralesProyectoPage';
+import DocentesProyectoPage from './pages/DocentesProyectoPage';
 
-import { Box, Button, Paper, Typography } from '@mui/material';
+import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
 
 import {
   obtenerUsuarioActual,
@@ -18,7 +19,7 @@ import {
 import type { Proyecto } from './services/proyectosApi';
 
 // Pantallas disponibles en esta etapa.
-type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento';
+type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento' | 'docentes';
 
 function App() {
 
@@ -40,6 +41,7 @@ function App() {
 
   // Indica que la sesión finalizó durante el uso de la aplicación.
   const [sesionExpirada, setSesionExpirada] = useState(false);
+  const [advertenciaSinDocentes, setAdvertenciaSinDocentes] = useState(false);
 
     // Finalizar la sesión del frontend cuando el backend informa que el usuario ya no está autenticado.
   const manejarSesionExpirada = useCallback(
@@ -89,6 +91,24 @@ function App() {
 
   function mostrarSeguimientoProyecto() {
     setPantalla('seguimiento');
+  }
+
+  function mostrarDocentesProyecto() {
+    setPantalla('docentes');
+  }
+
+  function abrirDocentesDesdeListado(proyecto: Proyecto) {
+    setProyectoSeleccionado(proyecto);
+    setPantalla('docentes');
+  }
+
+  function finalizarGestionDocentes(sinDocentes: boolean) {
+    volverAlListado();
+    setAdvertenciaSinDocentes(sinDocentes);
+  }
+
+  function cerrarAdvertenciaSinDocentes() {
+    setAdvertenciaSinDocentes(false);
   }
 
   function volverAPlanificacion() {
@@ -226,6 +246,7 @@ function App() {
           proyecto={proyectoSeleccionado}
           onIrAPlanificacion={volverAPlanificacion}
           onIrASeguimiento={mostrarSeguimientoProyecto}
+          onIrADocentes={mostrarDocentesProyecto}
           onVolverAlListado={volverAlListado}
           onSesionExpirada={manejarSesionExpirada}
         />
@@ -248,6 +269,7 @@ function App() {
           proyecto={proyectoSeleccionado}
           onVolver={volverAlListado}
           onContinuar={mostrarSeguimientoProyecto}
+          onIrADocentes={mostrarDocentesProyecto}
           onVerDatosGenerales={mostrarDatosGeneralesProyecto}
           onSesionExpirada={manejarSesionExpirada}
         />
@@ -265,6 +287,25 @@ function App() {
           onVerDatosGenerales={mostrarDatosGeneralesProyecto}
           onVolverAlListado={volverAlListado}
           onConfiguracionGuardada={manejarConfiguracionGuardada}
+          onIrADocentes={mostrarDocentesProyecto}
+          onSesionExpirada={manejarSesionExpirada}
+        />
+      </AppLayout>
+    );
+  }
+
+  if (pantalla === 'docentes' && proyectoSeleccionado !== null
+      && (usuario.rol === 'ADMINISTRADOR' || usuario.rol === 'OPERATIVO')) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <DocentesProyectoPage
+          proyecto={proyectoSeleccionado}
+          puedeGestionar={usuario.rol === 'ADMINISTRADOR'}
+          onIrADatosGenerales={mostrarDatosGeneralesProyecto}
+          onIrAPlanificacion={volverAPlanificacion}
+          onIrASeguimiento={mostrarSeguimientoProyecto}
+          onFinalizar={finalizarGestionDocentes}
+          onVolverAlListado={volverAlListado}
           onSesionExpirada={manejarSesionExpirada}
         />
       </AppLayout>
@@ -280,10 +321,22 @@ function App() {
       <ProyectosPage
         key={versionListado}
         puedeCrearProyecto={usuario.rol === 'ADMINISTRADOR'}
+        puedeConsultarDocentes={usuario.rol === 'OPERATIVO'}
         onNuevoProyecto={mostrarAltaProyecto}
         onPlanificarProyecto={mostrarPlanificacionProyecto}
+        onConsultarDocentes={abrirDocentesDesdeListado}
         onSesionExpirada={manejarSesionExpirada}
       />
+      <Snackbar
+        open={advertenciaSinDocentes}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        autoHideDuration={6000}
+        onClose={cerrarAdvertenciaSinDocentes}
+      >
+        <Alert severity="warning" onClose={cerrarAdvertenciaSinDocentes}>
+          El proyecto no tiene docentes
+        </Alert>
+      </Snackbar>
     </AppLayout>
   );
 
