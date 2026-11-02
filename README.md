@@ -1,13 +1,13 @@
 
-# TFG - Sistema de gestión y seguimiento de talleres educativos de Animando Vidas
+# Sistema de gestión y seguimiento de talleres educativos de Animando Vidas
 
 ## Descripción
 
-Prototipo de una aplicación web para el seguimiento y gestión de talleres educativos de la ONG Animando Vidas.
+Prototipo de aplicación web para el seguimiento y gestión de talleres educativos de la ONG Animando Vidas.
 
-El sistema permite realizar el seguimiento del avance de los talleres, controlar evidencias, registrar comunicaciones con docentes y generar información útil para la gestión institucional.
+El sistema permite realizar el seguimiento del avance de los talleres, controlar evidencias, registrar comunicaciones con docentes y generar información útil para la gestión de los proyectos.
 
-Además, incorpora el análisis cualitativo de respuestas abiertas mediante un modelo de lenguaje, con validación humana de los resultados.
+Además, incorpora el análisis cualitativo de respuestas abiertas de encuestas mediante un modelo de lenguaje, con validación humana de los resultados.
 
 ## Tecnologías
 
@@ -38,8 +38,4 @@ Cada funcionalidad comprende análisis, diseño técnico, implementación, integ
 
 En desarrollo.
 
-Etapa actual: implementación de la gestión de proyectos.
-
-## Ejecución local
-
-Las instrucciones para instalar dependencias y ejecutar los componentes se incorporarán durante las siguientes etapas de desarrollo.
+Etapa actual: implementación de la gestión de docentes.

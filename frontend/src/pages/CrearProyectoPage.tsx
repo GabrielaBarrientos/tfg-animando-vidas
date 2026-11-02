@@ -179,7 +179,10 @@ function CrearProyectoPage({
         width: '100%',
         boxSizing: 'border-box',
         px: { xs: 2, md: 4 },
-        py: 2
+        py: 2,
+        minHeight: 'calc(100dvh - 48px)',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
 
@@ -294,7 +297,7 @@ function CrearProyectoPage({
         sx={{
           px: 4,
           py: 2,
-          minHeight: 580,
+          flexGrow: 1,
           borderRadius: 1
         }}
       >

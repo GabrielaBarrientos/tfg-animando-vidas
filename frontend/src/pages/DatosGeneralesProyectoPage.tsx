@@ -26,6 +26,7 @@ interface DatosGeneralesProyectoPageProps {
   proyecto: Proyecto;
   onIrAPlanificacion: () => void;
   onIrASeguimiento: () => void;
+  onIrADocentes: () => void;
   onVolverAlListado: () => void;
   onSesionExpirada: () => void;
 }
@@ -34,6 +35,7 @@ function DatosGeneralesProyectoPage({
   proyecto,
   onIrAPlanificacion,
   onIrASeguimiento,
+  onIrADocentes,
   onVolverAlListado,
   onSesionExpirada
 }: DatosGeneralesProyectoPageProps) {
@@ -193,7 +195,9 @@ function DatosGeneralesProyectoPage({
             </StepButton>
           </Step>
           <Step>
-            <StepLabel>Docentes</StepLabel>
+            <StepButton onClick={onIrADocentes} disabled={proyecto.estado !== 'PLANIFICADO'}>
+              Docentes
+            </StepButton>
           </Step>
         </Stepper>
       </Paper>

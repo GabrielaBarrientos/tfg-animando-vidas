@@ -20,6 +20,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  FormLabel,
+  InputAdornment,
   Link,
   MenuItem,
   Paper,
@@ -51,6 +53,7 @@ interface SeguimientoProyectoPageProps {
   onVerDatosGenerales: () => void;
   onVolverAlListado: () => void;
   onConfiguracionGuardada: (estadoProyecto: string) => void;
+  onIrADocentes: () => void;
   onSesionExpirada: () => void;
 }
 
@@ -70,6 +73,7 @@ function SeguimientoProyectoPage({
   onVerDatosGenerales,
   onVolverAlListado,
   onConfiguracionGuardada,
+  onIrADocentes,
   onSesionExpirada
 }: SeguimientoProyectoPageProps) {
 
@@ -93,7 +97,7 @@ function SeguimientoProyectoPage({
   const [estadoPlanificado, setEstadoPlanificado] = useState(proyecto.estado === 'PLANIFICADO');
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
   const [destinoPendiente, setDestinoPendiente] =
-    useState<'planificacion' | 'datos-generales' | 'proyectos' | null>(null);
+    useState<'planificacion' | 'datos-generales' | 'proyectos' | 'docentes' | null>(null);
 
   useEffect(function cargarConfiguracionInicial() {
     let activo = true;
@@ -154,8 +158,10 @@ function SeguimientoProyectoPage({
     setIntentoCarga(intentoCarga + 1);
   }
 
-  function ejecutarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos') {
-    if (destino === 'planificacion') {
+  function ejecutarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes') {
+    if (destino === 'docentes') {
+      onIrADocentes();
+    } else if (destino === 'planificacion') {
       onVolver();
     } else if (destino === 'datos-generales') {
       onVerDatosGenerales();
@@ -164,7 +170,7 @@ function SeguimientoProyectoPage({
     }
   }
 
-  function solicitarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos') {
+  function solicitarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes') {
     if (guardando) {
       return;
     }
@@ -187,6 +193,10 @@ function SeguimientoProyectoPage({
 
   function irAProyectos() {
     solicitarNavegacion('proyectos');
+  }
+
+  function irADocentes() {
+    solicitarNavegacion('docentes');
   }
 
   function cancelarSalida() {
@@ -416,7 +426,11 @@ function SeguimientoProyectoPage({
               Seguimiento
             </StepLabel>
           </Step>
-          <Step><StepLabel>Docentes</StepLabel></Step>
+          <Step>
+            <StepButton onClick={irADocentes} disabled={cargando || guardando || !estadoPlanificado}>
+              Docentes
+            </StepButton>
+          </Step>
         </Stepper>
       </Paper>
 
@@ -438,90 +452,142 @@ function SeguimientoProyectoPage({
           </Alert>
         ) : (
           <Box component="form" noValidate onSubmit={guardarSeguimiento}>
-            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Umbrales de seguimiento
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '400px 400px' }, gap: 3, mb: 2 }}>
-              <TextField
-                label="Próximo atraso (semanas) *" type="number" size="small" required
-                value={umbralProximo} onChange={cambiarUmbralProximo}
-                slotProps={{ htmlInput: { min: 1, step: 1 } }}
-                error={intentoGuardar && !proximoValido}
-                helperText={intentoGuardar && !proximoValido ? 'Ingresá un entero positivo.' : 'Valor inicial: 2 semanas.'}
-              />
-              <TextField
-                label="Atraso (semanas) *" type="number" size="small" required
-                value={umbralAtraso} onChange={cambiarUmbralAtraso}
-                slotProps={{ htmlInput: { min: 1, step: 1 } }}
-                error={intentoGuardar && !atrasoValido}
-                helperText={intentoGuardar && !atrasoValido
-                  ? 'Debe ser un entero mayor que el umbral de próximo atraso.'
-                  : 'Valor inicial: 3 semanas.'}
-              />
-            </Box>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(3, minmax(0, 1fr))' },
+                columnGap: '40px',
+                rowGap: '40px',
+                alignItems: 'start',
+                mb: 3
+              }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: 0 }}>
+                <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Parámetros de seguimiento
+                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <FormLabel
+                    htmlFor="umbral-proximo-atraso"
+                    required
+                    sx={{ color: 'text.primary', '&.Mui-focused': { color: 'text.primary' } }}
+                  >
+                    Umbral de próximo atraso
+                  </FormLabel>
+                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                    Anticipación con la que el sistema identificará un taller próximo a presentar atraso.
+                  </Typography>
+                  <TextField
+                    id="umbral-proximo-atraso"
+                    fullWidth type="number" size="small" required
+                    value={umbralProximo} onChange={cambiarUmbralProximo}
+                    slotProps={{
+                      htmlInput: { min: 1, step: 1 },
+                      input: { endAdornment: <InputAdornment position="end">Semanas</InputAdornment> }
+                    }}
+                    error={intentoGuardar && !proximoValido}
+                    helperText={intentoGuardar && !proximoValido
+                      ? 'Ingresá un entero positivo.' : undefined}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <FormLabel
+                    htmlFor="umbral-atraso"
+                    required
+                    sx={{ color: 'text.primary', '&.Mui-focused': { color: 'text.primary' } }}
+                  >
+                    Umbral de atraso
+                  </FormLabel>
+                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                    Diferencia entre el avance esperado y el avance real a partir de la cual el taller se considerará atrasado.
+                  </Typography>
+                  <TextField
+                    id="umbral-atraso"
+                    fullWidth type="number" size="small" required
+                    value={umbralAtraso} onChange={cambiarUmbralAtraso}
+                    slotProps={{
+                      htmlInput: { min: 1, step: 1 },
+                      input: { endAdornment: <InputAdornment position="end">Semanas</InputAdornment> }
+                    }}
+                    error={intentoGuardar && !atrasoValido}
+                    helperText={intentoGuardar && !atrasoValido
+                      ? 'Debe ser un entero mayor que el umbral de próximo atraso.'
+                      : undefined}
+                  />
+                </Box>
+              </Box>
 
-            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Informe semanal
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '400px 400px' }, gap: 3, mb: 2 }}>
-              <TextField
-                select label="Responsable de seguimiento *" size="small" required
-                value={responsableSemanal} onChange={cambiarResponsableSemanal}
-                error={intentoGuardar && !responsableSemanalValido}
-                helperText="Usuario interno que recibiría el avance de sus proyectos asignados."
-              >
-                <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
-                {responsables.map(function mostrarResponsable(usuario) {
-                  return (
-                    <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
-                      {usuario.apellidos}, {usuario.nombres} ({usuario.email})
-                    </MenuItem>
-                  );
-                })}
-              </TextField>
-              <TextField select label="Día de informe semanal *" size="small"
-                value={diaSemanal} onChange={cambiarDiaSemanal}>
-                {diasSemana.map(function mostrarDia(dia) {
-                  return <MenuItem key={dia.valor} value={dia.valor}>{dia.nombre}</MenuItem>;
-                })}
-              </TextField>
-            </Box>
-
-            <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Informe mensual
-            </Typography>
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: '400px 400px' }, gap: 3, mb: 2 }}>
-              <TextField
-                select label="Responsable del proyecto *" size="small" required
-                value={responsableMensual} onChange={cambiarResponsableMensual}
-                error={intentoGuardar && !responsableMensualValido}
-                helperText="Usuario interno que recibiría el informe mensual del proyecto."
-              >
-                <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
-                {responsables.map(function mostrarResponsable(usuario) {
-                  return (
-                    <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
-                      {usuario.apellidos}, {usuario.nombres} ({usuario.email})
-                    </MenuItem>
-                  );
-                })}
-              </TextField>
-              <TextField select label="Fecha del informe mensual *" size="small"
-                value={tipoDiaMensual} onChange={cambiarTipoDiaMensual}>
-                <MenuItem value="ULTIMO_DIA_HABIL">Último día hábil del mes</MenuItem>
-                <MenuItem value="DIA_DEL_MES">Día específico del mes</MenuItem>
-              </TextField>
-              {tipoDiaMensual === 'DIA_DEL_MES' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: 0 }}>
+                <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Seguimiento semanal
+                </Typography>
                 <TextField
-                  label="Día del mes *" type="number" size="small" required
-                  value={diaMensual} onChange={cambiarDiaMensual}
-                  slotProps={{ htmlInput: { min: 1, max: 31, step: 1 } }}
-                  error={intentoGuardar && !diaMensualValido}
-                  helperText={intentoGuardar && !diaMensualValido
-                    ? 'Ingresá un día entre 1 y 31.'
-                    : 'La fecha efectiva en meses más cortos queda fuera del alcance de este incremento.'}
-                />
-              )}
+                  fullWidth select label="Responsable de seguimiento" size="small" required
+                  value={responsableSemanal} onChange={cambiarResponsableSemanal}
+                  error={intentoGuardar && !responsableSemanalValido}
+                  helperText="Usuario interno que recibiría el avance de sus proyectos asignados."
+                >
+                  <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
+                  {responsables.map(function mostrarResponsable(usuario) {
+                    return (
+                      <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
+                        {usuario.apellidos}, {usuario.nombres} ({usuario.email})
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+                <TextField fullWidth select label="Día de informe semanal" size="small" required
+                  value={diaSemanal} onChange={cambiarDiaSemanal}>
+                  {diasSemana.map(function mostrarDia(dia) {
+                    return <MenuItem key={dia.valor} value={dia.valor}>{dia.nombre}</MenuItem>;
+                  })}
+                </TextField>
+                <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                  El responsable recibirá un correo con el reporte del estado de los talleres
+                  indicando aquellos que requieren seguimiento y un enlace para consultar el proyecto.
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: 0 }}>
+                <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Avance mensual
+                </Typography>
+                <TextField
+                  fullWidth select label="Responsable del proyecto" size="small" required
+                  value={responsableMensual} onChange={cambiarResponsableMensual}
+                  error={intentoGuardar && !responsableMensualValido}
+                  helperText="Usuario interno que recibiría el informe mensual del proyecto."
+                >
+                  <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
+                  {responsables.map(function mostrarResponsable(usuario) {
+                    return (
+                      <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
+                        {usuario.apellidos}, {usuario.nombres} ({usuario.email})
+                      </MenuItem>
+                    );
+                  })}
+                </TextField>
+                <TextField fullWidth select label="Fecha del informe mensual" size="small" required
+                  value={tipoDiaMensual} onChange={cambiarTipoDiaMensual}>
+                  <MenuItem value="ULTIMO_DIA_HABIL">Último día hábil del mes</MenuItem>
+                  <MenuItem value="DIA_DEL_MES">Día específico del mes</MenuItem>
+                </TextField>
+                {tipoDiaMensual === 'DIA_DEL_MES' && (
+                  <TextField
+                    fullWidth label="Día del mes" type="number" size="small" required
+                    value={diaMensual} onChange={cambiarDiaMensual}
+                    slotProps={{ htmlInput: { min: 1, max: 31, step: 1 } }}
+                    error={intentoGuardar && !diaMensualValido}
+                    helperText={intentoGuardar && !diaMensualValido
+                      ? 'Ingresá un día entre 1 y 31.'
+                      : 'La fecha efectiva en meses más cortos queda fuera del alcance de este incremento.'}
+                  />
+                )}
+                <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                  El responsable recibirá un correo con el informe de avance consolidado del
+                  proyecto y un enlace para consultar el detalle.
+                </Typography>
+              </Box>
             </Box>
 
             {responsables.length === 0 && (

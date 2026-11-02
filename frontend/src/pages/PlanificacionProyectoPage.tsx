@@ -48,6 +48,7 @@ interface PlanificacionProyectoPageProps {
   proyecto: Proyecto;
   onVolver: () => void;
   onContinuar: () => void;
+  onIrADocentes: () => void;
   onVerDatosGenerales: () => void;
   onSesionExpirada: () => void;
 }
@@ -133,6 +134,7 @@ function calcularMaximoClases(
     proyecto,
     onVolver,
     onContinuar,
+    onIrADocentes,
     onVerDatosGenerales,
     onSesionExpirada
   }: PlanificacionProyectoPageProps) {
@@ -155,7 +157,7 @@ function calcularMaximoClases(
   const [planificacionGuardada, setPlanificacionGuardada] = useState(false);
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
   const [destinoPendiente, setDestinoPendiente] =
-    useState<'proyectos' | 'datos-generales' | null>(null);
+    useState<'proyectos' | 'datos-generales' | 'docentes' | null>(null);
 
   // Permite volver a consultar la planificación si falla la carga.
   const [intentoCarga, setIntentoCarga] = useState(0);
@@ -242,15 +244,17 @@ function calcularMaximoClases(
   }
 
   // Evitar abandonar la pantalla y perder cambios de la planificación.
-  function ejecutarNavegacion(destino: 'proyectos' | 'datos-generales') {
-    if (destino === 'datos-generales') {
+  function ejecutarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes') {
+    if (destino === 'docentes') {
+      onIrADocentes();
+    } else if (destino === 'datos-generales') {
       onVerDatosGenerales();
     } else {
       onVolver();
     }
   }
 
-  function solicitarNavegacion(destino: 'proyectos' | 'datos-generales') {
+  function solicitarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes') {
     if (guardando) {
       return;
     }
@@ -269,6 +273,10 @@ function calcularMaximoClases(
 
   function solicitarVerDatosGenerales() {
     solicitarNavegacion('datos-generales');
+  }
+
+  function solicitarVerDocentes() {
+    solicitarNavegacion('docentes');
   }
 
   function cancelarSalida() {
@@ -569,7 +577,9 @@ function calcularMaximoClases(
             </StepButton>
           </Step>
           <Step>
-            <StepLabel>Docentes</StepLabel>
+            <StepButton onClick={solicitarVerDocentes} disabled={proyecto.estado !== 'PLANIFICADO' || guardando}>
+              Docentes
+            </StepButton>
           </Step>
         </Stepper>
       </Paper>
