@@ -5,6 +5,8 @@ import AppLayout from './components/AppLayout';
 import ProyectosPage from './pages/ProyectosPage';
 import CrearProyectoPage from './pages/CrearProyectoPage';
 import PlanificacionProyectoPage from './pages/PlanificacionProyectoPage';
+import SeguimientoProyectoPage from './pages/SeguimientoProyectoPage';
+import DatosGeneralesProyectoPage from './pages/DatosGeneralesProyectoPage';
 
 import { Box, Button, Paper, Typography } from '@mui/material';
 
@@ -16,7 +18,7 @@ import {
 import type { Proyecto } from './services/proyectosApi';
 
 // Pantallas disponibles en esta etapa.
-type Pantalla = 'listado' | 'alta' | 'planificacion';
+type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento';
 
 function App() {
 
@@ -80,6 +82,35 @@ function App() {
     setPantalla('planificacion');
   }
 
+
+  function mostrarDatosGeneralesProyecto() {
+    setPantalla('datos-generales');
+  }
+
+  function mostrarSeguimientoProyecto() {
+    setPantalla('seguimiento');
+  }
+
+  function volverAPlanificacion() {
+    setPantalla('planificacion');
+  }
+
+  function manejarConfiguracionGuardada(estadoProyecto: string) {
+    // Mantener el estado persistido actualizado en todas las pantallas.
+    // Cambiar de paso en el Stepper no modifica el estado del proyecto.
+    setProyectoSeleccionado(function actualizarEstado(proyectoActual) {
+      if (proyectoActual === null) {
+        return null;
+      }
+
+      return { ...proyectoActual, estado: estadoProyecto };
+    });
+
+    // La próxima consulta del listado recuperará los datos actualizados.
+    setVersionListado(function incrementarVersion(valorActual) {
+      return valorActual + 1;
+    });
+  }
 
   // Regresar al listado de proyectos.
   function volverAlListado() {
@@ -183,6 +214,25 @@ function App() {
     );
   }
 
+  // Consulta de los datos generales de un proyecto existente (solo lectura).
+  if (
+    pantalla === 'datos-generales' &&
+    usuario.rol === 'ADMINISTRADOR' &&
+    proyectoSeleccionado !== null
+  ) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <DatosGeneralesProyectoPage
+          proyecto={proyectoSeleccionado}
+          onIrAPlanificacion={volverAPlanificacion}
+          onIrASeguimiento={mostrarSeguimientoProyecto}
+          onVolverAlListado={volverAlListado}
+          onSesionExpirada={manejarSesionExpirada}
+        />
+      </AppLayout>
+    );
+  }
+
   // Pantalla 4: Planificación del proyecto.
   if (
     pantalla === 'planificacion' &&
@@ -197,6 +247,24 @@ function App() {
         <PlanificacionProyectoPage
           proyecto={proyectoSeleccionado}
           onVolver={volverAlListado}
+          onContinuar={mostrarSeguimientoProyecto}
+          onVerDatosGenerales={mostrarDatosGeneralesProyecto}
+          onSesionExpirada={manejarSesionExpirada}
+        />
+      </AppLayout>
+    );
+  }
+
+  if (pantalla === 'seguimiento' && usuario.rol === 'ADMINISTRADOR'
+      && proyectoSeleccionado !== null) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <SeguimientoProyectoPage
+          proyecto={proyectoSeleccionado}
+          onVolver={volverAPlanificacion}
+          onVerDatosGenerales={mostrarDatosGeneralesProyecto}
+          onVolverAlListado={volverAlListado}
+          onConfiguracionGuardada={manejarConfiguracionGuardada}
           onSesionExpirada={manejarSesionExpirada}
         />
       </AppLayout>

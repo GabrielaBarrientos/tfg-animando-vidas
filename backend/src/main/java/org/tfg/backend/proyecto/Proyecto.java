@@ -89,6 +89,12 @@ public class Proyecto {
         return empresa;
     }
 
+    public void marcarPlanificado() {
+        if (estado == EstadoProyecto.PENDIENTE_PLANIFICACION) {
+            estado = EstadoProyecto.PLANIFICADO;
+        }
+    }
+
     public EstadoProyecto getEstado() {
         return estado;
     }

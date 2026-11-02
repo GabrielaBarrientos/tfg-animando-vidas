@@ -27,11 +27,17 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Link,
   MenuItem,
   Paper,
   Snackbar,
   Step,
+  StepButton,
   StepLabel,
   Stepper,
   TextField,
@@ -41,6 +47,8 @@ import {
 interface PlanificacionProyectoPageProps {
   proyecto: Proyecto;
   onVolver: () => void;
+  onContinuar: () => void;
+  onVerDatosGenerales: () => void;
   onSesionExpirada: () => void;
 }
 
@@ -90,10 +98,7 @@ function calcularMaximoClases(
   const milisegundosDia = 24 * 60 * 60 * 1000;
 
   // Ambas fechas son inclusivas.
-  const diasTotales =
-    Math.round(
-      (fin.getTime() - inicio.getTime()) / milisegundosDia
-    ) + 1;
+  const diasTotales = Math.round((fin.getTime() - inicio.getTime()) / milisegundosDia) + 1;
 
   if (frecuencia === 'SEMANAL') {
     return Math.ceil(diasTotales / 7);
@@ -104,32 +109,16 @@ function calcularMaximoClases(
   }
 
   // Frecuencia mensual: considerar las fechas exactas.
-  const mesesTranscurridos =
-    (fin.getUTCFullYear() - inicio.getUTCFullYear()) * 12 +
+  const mesesTranscurridos = (fin.getUTCFullYear() - inicio.getUTCFullYear()) * 12 +
     (fin.getUTCMonth() - inicio.getUTCMonth());
 
   // Determinar el último día del mes de finalización.
-  const ultimoDiaMes = new Date(
-    Date.UTC(
-      fin.getUTCFullYear(),
-      fin.getUTCMonth() + 1,
-      0
-    )
-  ).getUTCDate();
+  const ultimoDiaMes = new Date(Date.UTC(fin.getUTCFullYear(), fin.getUTCMonth() + 1, 0)).getUTCDate();
 
   // Mantener el día de inicio, ajustándolo cuando sea necesario.
-  const diaClase = Math.min(
-    inicio.getUTCDate(),
-    ultimoDiaMes
-  );
+  const diaClase = Math.min(inicio.getUTCDate(), ultimoDiaMes);
 
-  const ultimaFechaPosible = new Date(
-    Date.UTC(
-      fin.getUTCFullYear(),
-      fin.getUTCMonth(),
-      diaClase
-    )
-  );
+  const ultimaFechaPosible = new Date(Date.UTC(fin.getUTCFullYear(), fin.getUTCMonth(), diaClase));
 
   let maximoClases = mesesTranscurridos;
 
@@ -143,6 +132,8 @@ function calcularMaximoClases(
   function PlanificacionProyectoPage({
     proyecto,
     onVolver,
+    onContinuar,
+    onVerDatosGenerales,
     onSesionExpirada
   }: PlanificacionProyectoPageProps) {
 
@@ -150,8 +141,7 @@ function calcularMaximoClases(
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFinalizacion, setFechaFinalizacion] = useState('');
   const [cantidadClases, setCantidadClases] = useState('');
-  const [frecuenciaClases, setFrecuenciaClases] =
-    useState<FrecuenciaClases | ''>('');
+  const [frecuenciaClases, setFrecuenciaClases] = useState<FrecuenciaClases | ''>('');
 
   // Estado de la pantalla.
   const [cargando, setCargando] = useState(true);
@@ -162,15 +152,15 @@ function calcularMaximoClases(
 
   // Indica si el usuario intentó guardar el formulario.
   const [intentoGuardar, setIntentoGuardar] = useState(false);
+  const [planificacionGuardada, setPlanificacionGuardada] = useState(false);
+  const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
+  const [destinoPendiente, setDestinoPendiente] =
+    useState<'proyectos' | 'datos-generales' | null>(null);
 
   // Permite volver a consultar la planificación si falla la carga.
   const [intentoCarga, setIntentoCarga] = useState(0);
 
-  const maximoClases = calcularMaximoClases(
-    fechaInicio,
-    fechaFinalizacion,
-    frecuenciaClases
-  );
+  const maximoClases = calcularMaximoClases(fechaInicio, fechaFinalizacion, frecuenciaClases);
 
   const numeroClases = Number(cantidadClases);
 
@@ -185,11 +175,9 @@ function calcularMaximoClases(
   fechaFinalizacion !== '' &&
   fechaFinalizacion <= fechaInicio;
 
-  const cantidadInvalida =
-    cantidadClases !== '' &&
+  const cantidadInvalida = cantidadClases !== '' &&
     (
-      !Number.isInteger(Number(cantidadClases)) ||
-      Number(cantidadClases) <= 0
+      !Number.isInteger(Number(cantidadClases)) || Number(cantidadClases) <= 0
     );
 
   // Recuperar los datos al ingresar a la pantalla.
@@ -213,6 +201,8 @@ function calcularMaximoClases(
           setFechaFinalizacion(resultado.fechaFinalizacion);
           setCantidadClases(String(resultado.cantidadClases));
           setFrecuenciaClases(resultado.frecuenciaClases);
+          setPlanificacionGuardada(true);
+          setCambiosSinGuardar(false);
         }
 
       } catch (excepcion) {
@@ -251,10 +241,55 @@ function calcularMaximoClases(
     setIntentoCarga(intentoCarga + 1);
   }
 
+  // Evitar abandonar la pantalla y perder cambios de la planificación.
+  function ejecutarNavegacion(destino: 'proyectos' | 'datos-generales') {
+    if (destino === 'datos-generales') {
+      onVerDatosGenerales();
+    } else {
+      onVolver();
+    }
+  }
+
+  function solicitarNavegacion(destino: 'proyectos' | 'datos-generales') {
+    if (guardando) {
+      return;
+    }
+
+    if (cambiosSinGuardar) {
+      setDestinoPendiente(destino);
+      return;
+    }
+
+    ejecutarNavegacion(destino);
+  }
+
+  function solicitarVolverAProyectos() {
+    solicitarNavegacion('proyectos');
+  }
+
+  function solicitarVerDatosGenerales() {
+    solicitarNavegacion('datos-generales');
+  }
+
+  function cancelarSalida() {
+    setDestinoPendiente(null);
+  }
+
+  function descartarCambiosYVolver() {
+    const destino = destinoPendiente;
+    setDestinoPendiente(null);
+
+    if (destino !== null) {
+      ejecutarNavegacion(destino);
+    }
+  }
+
   function cambiarFechaInicio(
     evento: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setFechaInicio(evento.target.value);
+    setCambiosSinGuardar(true);
+    setPlanificacionGuardada(false);
     setMensajeExito('');
   }
 
@@ -262,6 +297,8 @@ function calcularMaximoClases(
     evento: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setFechaFinalizacion(evento.target.value);
+    setCambiosSinGuardar(true);
+    setPlanificacionGuardada(false);
     setMensajeExito('');
   }
 
@@ -269,6 +306,8 @@ function calcularMaximoClases(
     evento: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setCantidadClases(evento.target.value);
+    setCambiosSinGuardar(true);
+    setPlanificacionGuardada(false);
     setMensajeExito('');
   }
 
@@ -276,6 +315,8 @@ function calcularMaximoClases(
     evento: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setFrecuenciaClases(evento.target.value as FrecuenciaClases);
+    setCambiosSinGuardar(true);
+    setPlanificacionGuardada(false);
     setMensajeExito('');
   }
 
@@ -338,6 +379,8 @@ function calcularMaximoClases(
       );
 
       setIntentoGuardar(false);
+      setPlanificacionGuardada(true);
+      setCambiosSinGuardar(false);
 
       setMensajeExito(
         'La planificación se guardó correctamente.'
@@ -382,7 +425,10 @@ function calcularMaximoClases(
         width: '100%',
         boxSizing: 'border-box',
         px: { xs: 2, md: 4 },
-        py: 2
+        py: 2,
+        minHeight: 'calc(100dvh - 48px)',
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
       {/* Navegación */}
@@ -394,7 +440,7 @@ function calcularMaximoClases(
           component="button"
           type="button"
           underline="hover"
-          onClick={onVolver}
+          onClick={solicitarVolverAProyectos}
           sx={{ fontSize: 14, color: '#667085' }}
         >
           Inicio
@@ -404,7 +450,7 @@ function calcularMaximoClases(
           component="button"
           type="button"
           underline="hover"
-          onClick={onVolver}
+          onClick={solicitarVolverAProyectos}
           sx={{ fontSize: 14, color: '#667085' }}
         >
           Proyectos
@@ -450,11 +496,13 @@ function calcularMaximoClases(
           {proyecto.nombreCompleto}
         </Typography>
 
-        {proyecto.estado === 'PENDIENTE_PLANIFICACION' && (
+        {(proyecto.estado === 'PENDIENTE_PLANIFICACION' ||
+          proyecto.estado === 'PLANIFICADO') && (
           <Chip
-            label="Pendiente"
+            label={proyecto.estado === 'PLANIFICADO' ? 'Planificado' : 'Pendiente'}
             sx={{
-              backgroundColor: colores.chipAmarillo,
+              backgroundColor: proyecto.estado === 'PLANIFICADO'
+                ? colores.chipVerdeClaro : colores.chipAmarillo,
               color: colores.textoPrimario,
               borderRadius: '6px',
               height: 32,
@@ -470,27 +518,55 @@ function calcularMaximoClases(
         variant="outlined"
         sx={{
           mb: 2,
-          height: 48,
-          px: 3,
+          minHeight: 48,
+          px: { xs: 1, sm: 2, md: 3 },
+          py: { xs: 1.5, sm: 1 },
           display: 'flex',
           alignItems: 'center',
           borderRadius: 2,
-          overflowX: 'auto',
           boxSizing: 'border-box'
         }}
       >
         <Stepper
           activeStep={1}
-          sx={{ width: '100%', minWidth: 720 }}
+          sx={{
+            width: '100%',
+            minWidth: 0,
+            '& .MuiStep-root': { minWidth: 0, px: { xs: 0.25, md: 1 } },
+            '& .MuiStepLabel-root': {
+              flexDirection: { xs: 'column', md: 'row' }
+            },
+            '& .MuiStepLabel-label': {
+              fontSize: { xs: 10, sm: 12, md: 14 },
+              lineHeight: 1.3,
+              whiteSpace: 'normal',
+              textAlign: { xs: 'center', md: 'left' }
+            },
+            '& .MuiStepButton-root': {
+              width: '100%',
+              minWidth: 0,
+              minHeight: 32,
+              boxSizing: 'border-box',
+              margin: 0,
+              padding: { xs: 0.25, sm: 0.75 }
+            }
+          }}
         >
-          <Step>
-            <StepLabel>Datos generales</StepLabel>
+          <Step completed>
+            <StepButton onClick={solicitarVerDatosGenerales} disabled={guardando}>
+              Datos generales
+            </StepButton>
           </Step>
           <Step>
             <StepLabel>Planificación</StepLabel>
           </Step>
-          <Step>
-            <StepLabel>Seguimiento</StepLabel>
+          <Step completed={proyecto.estado === 'PLANIFICADO'}>
+            <StepButton
+              onClick={onContinuar}
+              disabled={!planificacionGuardada || guardando || cargando || errorCarga}
+            >
+              Seguimiento
+            </StepButton>
           </Step>
           <Step>
             <StepLabel>Docentes</StepLabel>
@@ -504,7 +580,7 @@ function calcularMaximoClases(
         sx={{
           px: 4,
           py: 2,
-          minHeight: 580,
+          flexGrow: 1,
           borderRadius: 1
         }}
       >
@@ -561,15 +637,15 @@ function calcularMaximoClases(
               sx={{
                 display: 'grid',
                 gridTemplateColumns: {
-                  xs: '1fr',
-                  md: '300px 300px'
+                  xs: 'minmax(0, 1fr)',
+                  lg: '400px 400px'
                 },
-                columnGap: { xs: 2, md: 10 },
+                columnGap: 3,
                 rowGap: 2,
                 alignItems: 'start'
               }}
             >
-              <Box>
+              <Box sx={{ width: 400, maxWidth: '100%' }}>
                 <Typography component="label" htmlFor="fechaInicio" sx={{ display: 'block', mb: 1 }}>
                   Fecha de inicio *
                 </Typography>
@@ -590,7 +666,7 @@ function calcularMaximoClases(
                 />
               </Box>
 
-              <Box>
+              <Box sx={{ width: 400, maxWidth: '100%' }}>
                 <Typography component="label" htmlFor="fechaFinalizacion" sx={{ display: 'block', mb: 1 }}>
                   Fecha de finalización *
                 </Typography>
@@ -613,7 +689,7 @@ function calcularMaximoClases(
                 />
               </Box>
 
-              <Box>
+              <Box sx={{ width: 400, maxWidth: '100%' }}>
                 <Typography component="label" htmlFor="duracionMeses" sx={{ display: 'block', mb: 1 }}>
                   Duración en meses
                 </Typography>
@@ -628,7 +704,7 @@ function calcularMaximoClases(
               </Box>
 
 
-              <Box>
+              <Box sx={{ width: 400, maxWidth: '100%' }}>
                 <Typography component="label" htmlFor="cantidadClases" sx={{ display: 'block', mb: 1 }}>
                   Cantidad de clases *
                 </Typography>
@@ -653,7 +729,7 @@ function calcularMaximoClases(
                 />
               </Box>
 
-              <Box>
+              <Box sx={{ width: 400, maxWidth: '100%' }}>
                 <Typography component="label" htmlFor="frecuenciaClases" sx={{ display: 'block', mb: 1 }}>
                   Frecuencia de clases *
                 </Typography>
@@ -693,10 +769,10 @@ function calcularMaximoClases(
                 type="button"
                 variant="text"
                 disabled={guardando}
-                onClick={onVolver}
-                sx={{ minWidth: 107, height: 36 }}
+                onClick={solicitarVolverAProyectos}
+                sx={{ minWidth: 140, height: 36 }}
               >
-                Volver
+                Ir a proyectos
               </Button>
 
               <Button
@@ -707,11 +783,29 @@ function calcularMaximoClases(
               >
                 {guardando ? 'Guardando...' : 'Guardar planificación'}
               </Button>
+
             </Box>
           </Box>
         )}
       </Paper>
 
+
+      <Dialog open={destinoPendiente !== null} onClose={cancelarSalida} aria-labelledby="confirmar-salida-planificacion">
+        <DialogTitle id="confirmar-salida-planificacion">
+          ¿Descartar cambios sin guardar?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Los cambios realizados en la planificación se perderán si salís sin guardarlos.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cancelarSalida}>Cancelar</Button>
+          <Button color="error" onClick={descartarCambiosYVolver}>
+            Descartar y salir
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         key={error !== '' ? `error-${error}` : `exito-${mensajeExito}`}

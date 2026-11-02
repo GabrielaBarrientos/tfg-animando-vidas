@@ -78,8 +78,8 @@ function AccesoPlanificacion({
   return (
     <IconButton
       size="small"
-      title="Continuar planificación"
-      aria-label={'Continuar planificación de ' + proyecto.nombre}
+      title="Abrir configuración del proyecto"
+      aria-label={'Abrir configuración de ' + proyecto.nombre}
       onClick={abrirPlanificacion}
     >
       <ChevronRightIcon
@@ -267,7 +267,8 @@ function ProyectosPage({
         {/* Encabezado */}
         <Box sx={{
               px: 4,
-              py: 2
+              pt: 2,
+              pb: 0
             }}>
           <Typography component="h1" variant="h5">
             Proyectos
@@ -486,7 +487,8 @@ function ProyectosPage({
                         <Chip
                           label={obtenerNombreEstado(proyecto.estado)}
                           sx={{
-                            backgroundColor: colores.chipAmarillo,
+                            backgroundColor: proyecto.estado === 'PLANIFICADO'
+                              ? colores.chipVerdeClaro : colores.chipAmarillo,
                             color: colores.textoPrimario,
                             borderRadius: '6px',
                             height: 32,
@@ -498,7 +500,8 @@ function ProyectosPage({
 
                       <TableCell align="right">
                         {puedeCrearProyecto &&
-                        proyecto.estado === 'PENDIENTE_PLANIFICACION' ? (
+                        (proyecto.estado === 'PENDIENTE_PLANIFICACION' ||
+                        proyecto.estado === 'PLANIFICADO') ? (
                           <AccesoPlanificacion
                             proyecto={proyecto}
                             onPlanificarProyecto={onPlanificarProyecto}
