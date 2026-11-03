@@ -20,7 +20,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  FormLabel,
   InputAdornment,
   Link,
   MenuItem,
@@ -49,6 +48,8 @@ import { colores } from '../theme';
 
 interface SeguimientoProyectoPageProps {
   proyecto: Proyecto;
+  enFlujoAlta: boolean;
+  onVolverAlDetalle: () => void;
   onVolver: () => void;
   onVerDatosGenerales: () => void;
   onVolverAlListado: () => void;
@@ -69,6 +70,8 @@ const diasSemana: { valor: DiaInformeSemanal; nombre: string }[] = [
 
 function SeguimientoProyectoPage({
   proyecto,
+  enFlujoAlta,
+  onVolverAlDetalle,
   onVolver,
   onVerDatosGenerales,
   onVolverAlListado,
@@ -97,7 +100,7 @@ function SeguimientoProyectoPage({
   const [estadoPlanificado, setEstadoPlanificado] = useState(proyecto.estado === 'PLANIFICADO');
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
   const [destinoPendiente, setDestinoPendiente] =
-    useState<'planificacion' | 'datos-generales' | 'proyectos' | 'docentes' | null>(null);
+    useState<'planificacion' | 'datos-generales' | 'proyectos' | 'docentes' | 'detalle' | null>(null);
 
   useEffect(function cargarConfiguracionInicial() {
     let activo = true;
@@ -158,19 +161,21 @@ function SeguimientoProyectoPage({
     setIntentoCarga(intentoCarga + 1);
   }
 
-  function ejecutarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes') {
+  function ejecutarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes' | 'detalle') {
     if (destino === 'docentes') {
       onIrADocentes();
     } else if (destino === 'planificacion') {
       onVolver();
     } else if (destino === 'datos-generales') {
       onVerDatosGenerales();
+    } else if (destino === 'detalle') {
+      onVolverAlDetalle();
     } else {
       onVolverAlListado();
     }
   }
 
-  function solicitarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes') {
+  function solicitarNavegacion(destino: 'planificacion' | 'datos-generales' | 'proyectos' | 'docentes' | 'detalle') {
     if (guardando) {
       return;
     }
@@ -193,6 +198,10 @@ function SeguimientoProyectoPage({
 
   function irAProyectos() {
     solicitarNavegacion('proyectos');
+  }
+
+  function irAlDetalle() {
+    solicitarNavegacion('detalle');
   }
 
   function irADocentes() {
@@ -348,7 +357,14 @@ function SeguimientoProyectoPage({
         <Link component="button" type="button" underline="hover" color="inherit" onClick={irAProyectos}>
           Proyectos
         </Link>
-        <Typography variant="body2" color="text.secondary">{proyecto.nombreCompleto}</Typography>
+        {enFlujoAlta ? (
+          <Typography variant="body2" color="text.secondary">{proyecto.nombreCompleto}</Typography>
+        ) : (
+          <Link component="button" type="button" underline="hover" onClick={irAlDetalle}
+            sx={{ color: '#667085' }}>
+            {proyecto.nombreCompleto}
+          </Link>
+        )}
         <Typography variant="body2" sx={{ color: colores.verdeOscuro }}>Seguimiento</Typography>
       </Breadcrumbs>
 
@@ -367,72 +383,74 @@ function SeguimientoProyectoPage({
         />
       </Box>
 
-      <Paper
-        variant="outlined"
-        sx={{
-          mb: 2,
-          minHeight: 48,
-          px: { xs: 1, sm: 2, md: 3 },
-          py: { xs: 1.5, sm: 1 },
-          display: 'flex',
-          alignItems: 'center',
-          borderRadius: 2,
-          boxSizing: 'border-box'
-        }}
-      >
-        <Stepper
-          activeStep={2}
+      {enFlujoAlta && (
+        <Paper
+          variant="outlined"
           sx={{
-            width: '100%',
-            minWidth: 0,
-            '& .MuiStep-root': { minWidth: 0, px: { xs: 0.25, md: 1 } },
-            '& .MuiStepLabel-root': {
-              flexDirection: { xs: 'column', md: 'row' }
-            },
-            '& .MuiStepLabel-label': {
-              fontSize: { xs: 10, sm: 12, md: 14 },
-              lineHeight: 1.3,
-              whiteSpace: 'normal',
-              textAlign: { xs: 'center', md: 'left' }
-            },
-            '& .MuiStepButton-root': {
-              width: '100%',
-              minWidth: 0,
-              minHeight: 32,
-              boxSizing: 'border-box',
-              margin: 0,
-              padding: { xs: 0.25, sm: 0.75 }
-            }
+            mb: 2,
+            minHeight: 48,
+            px: { xs: 1, sm: 2, md: 3 },
+            py: { xs: 1.5, sm: 1 },
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: 2,
+            boxSizing: 'border-box'
           }}
         >
-          <Step completed>
-            <StepButton onClick={verDatosGenerales} disabled={cargando || guardando}>
-              Datos generales
-            </StepButton>
-          </Step>
-          <Step>
-            <StepButton onClick={volverAPlanificacion} disabled={cargando || guardando}>
-              Planificación
-            </StepButton>
-          </Step>
-          <Step completed={seguimientoCompleto}>
-            <StepLabel
-              sx={{
-                '& .MuiStepIcon-root.Mui-active': {
-                  color: seguimientoCompleto ? colores.rosa : 'text.disabled'
-                }
-              }}
-            >
-              Seguimiento
-            </StepLabel>
-          </Step>
-          <Step>
-            <StepButton onClick={irADocentes} disabled={cargando || guardando || !estadoPlanificado}>
-              Docentes
-            </StepButton>
-          </Step>
-        </Stepper>
-      </Paper>
+          <Stepper
+            activeStep={2}
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              '& .MuiStep-root': { minWidth: 0, px: { xs: 0.25, md: 1 } },
+              '& .MuiStepLabel-root': {
+                flexDirection: { xs: 'column', md: 'row' }
+              },
+              '& .MuiStepLabel-label': {
+                fontSize: { xs: 10, sm: 12, md: 14 },
+                lineHeight: 1.3,
+                whiteSpace: 'normal',
+                textAlign: { xs: 'center', md: 'left' }
+              },
+              '& .MuiStepButton-root': {
+                width: '100%',
+                minWidth: 0,
+                minHeight: 32,
+                boxSizing: 'border-box',
+                margin: 0,
+                padding: { xs: 0.25, sm: 0.75 }
+              }
+            }}
+          >
+            <Step completed>
+              <StepButton onClick={verDatosGenerales} disabled={cargando || guardando}>
+                Datos generales
+              </StepButton>
+            </Step>
+            <Step>
+              <StepButton onClick={volverAPlanificacion} disabled={cargando || guardando}>
+                Planificación
+              </StepButton>
+            </Step>
+            <Step completed={seguimientoCompleto}>
+              <StepLabel
+                sx={{
+                  '& .MuiStepIcon-root.Mui-active': {
+                    color: seguimientoCompleto ? colores.rosa : 'text.disabled'
+                  }
+                }}
+              >
+                Seguimiento
+              </StepLabel>
+            </Step>
+            <Step>
+              <StepButton onClick={irADocentes} disabled={cargando || guardando || !estadoPlanificado}>
+                Docentes
+              </StepButton>
+            </Step>
+          </Stepper>
+        </Paper>
+      )}
 
       <Paper sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1 }} elevation={0}>
         <Typography component="h2" variant="h6">
@@ -456,7 +474,7 @@ function SeguimientoProyectoPage({
               sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'repeat(3, minmax(0, 1fr))' },
-                columnGap: '40px',
+                columnGap: '60px',
                 rowGap: '40px',
                 alignItems: 'start',
                 mb: 3
@@ -467,19 +485,9 @@ function SeguimientoProyectoPage({
                   Parámetros de seguimiento
                 </Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <FormLabel
-                    htmlFor="umbral-proximo-atraso"
-                    required
-                    sx={{ color: 'text.primary', '&.Mui-focused': { color: 'text.primary' } }}
-                  >
-                    Umbral de próximo atraso
-                  </FormLabel>
-                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
-                    Anticipación con la que el sistema identificará un taller próximo a presentar atraso.
-                  </Typography>
                   <TextField
                     id="umbral-proximo-atraso"
-                    fullWidth type="number" size="small" required
+                    fullWidth label="Umbral de próximo atraso" type="number" size="small" required
                     value={umbralProximo} onChange={cambiarUmbralProximo}
                     slotProps={{
                       htmlInput: { min: 1, step: 1 },
@@ -489,21 +497,14 @@ function SeguimientoProyectoPage({
                     helperText={intentoGuardar && !proximoValido
                       ? 'Ingresá un entero positivo.' : undefined}
                   />
+                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                    Anticipación con la que el sistema identificará un taller próximo a presentar atraso.
+                  </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <FormLabel
-                    htmlFor="umbral-atraso"
-                    required
-                    sx={{ color: 'text.primary', '&.Mui-focused': { color: 'text.primary' } }}
-                  >
-                    Umbral de atraso
-                  </FormLabel>
-                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
-                    Diferencia entre el avance esperado y el avance real a partir de la cual el taller se considerará atrasado.
-                  </Typography>
                   <TextField
                     id="umbral-atraso"
-                    fullWidth type="number" size="small" required
+                    fullWidth label="Umbral de atraso" type="number" size="small" required
                     value={umbralAtraso} onChange={cambiarUmbralAtraso}
                     slotProps={{
                       htmlInput: { min: 1, step: 1 },
@@ -514,6 +515,9 @@ function SeguimientoProyectoPage({
                       ? 'Debe ser un entero mayor que el umbral de próximo atraso.'
                       : undefined}
                   />
+                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                    Diferencia entre el avance esperado y el avance real a partir de la cual el taller se considerará atrasado.
+                  </Typography>
                 </Box>
               </Box>
 
@@ -521,72 +525,77 @@ function SeguimientoProyectoPage({
                 <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
                   Seguimiento semanal
                 </Typography>
-                <TextField
-                  fullWidth select label="Responsable de seguimiento" size="small" required
-                  value={responsableSemanal} onChange={cambiarResponsableSemanal}
-                  error={intentoGuardar && !responsableSemanalValido}
-                  helperText="Usuario interno que recibiría el avance de sus proyectos asignados."
-                >
-                  <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
-                  {responsables.map(function mostrarResponsable(usuario) {
-                    return (
-                      <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
-                        {usuario.apellidos}, {usuario.nombres} ({usuario.email})
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-                <TextField fullWidth select label="Día de informe semanal" size="small" required
-                  value={diaSemanal} onChange={cambiarDiaSemanal}>
-                  {diasSemana.map(function mostrarDia(dia) {
-                    return <MenuItem key={dia.valor} value={dia.valor}>{dia.nombre}</MenuItem>;
-                  })}
-                </TextField>
-                <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
-                  El responsable recibirá un correo con el reporte del estado de los talleres
-                  indicando aquellos que requieren seguimiento y un enlace para consultar el proyecto.
-                </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField
+                    fullWidth select label="Día de reporte semanal" size="small" required
+                    value={diaSemanal}
+                    onChange={cambiarDiaSemanal}
+                    helperText="Día de la semana para el envío del reporte del estado de los talleres indicando aquellos que requieren seguimiento."
+                  >
+                    {diasSemana.map(function mostrarDia(dia) {
+                      return <MenuItem key={dia.valor} value={dia.valor}>{dia.nombre}</MenuItem>;
+                    })}
+                  </TextField>
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField
+                    fullWidth select label="Responsable de seguimiento" size="small" required
+                    value={responsableSemanal} onChange={cambiarResponsableSemanal}
+                    error={intentoGuardar && !responsableSemanalValido}
+                  >
+                    <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
+                    {responsables.map(function mostrarResponsable(usuario) {
+                      return (
+                        <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
+                          {usuario.apellidos}, {usuario.nombres} ({usuario.email})
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
+                </Box>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px', minWidth: 0 }}>
                 <Typography component="h3" variant="subtitle1" sx={{ fontWeight: 600 }}>
                   Avance mensual
                 </Typography>
-                <TextField
-                  fullWidth select label="Responsable del proyecto" size="small" required
-                  value={responsableMensual} onChange={cambiarResponsableMensual}
-                  error={intentoGuardar && !responsableMensualValido}
-                  helperText="Usuario interno que recibiría el informe mensual del proyecto."
-                >
-                  <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
-                  {responsables.map(function mostrarResponsable(usuario) {
-                    return (
-                      <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
-                        {usuario.apellidos}, {usuario.nombres} ({usuario.email})
-                      </MenuItem>
-                    );
-                  })}
-                </TextField>
-                <TextField fullWidth select label="Fecha del informe mensual" size="small" required
-                  value={tipoDiaMensual} onChange={cambiarTipoDiaMensual}>
-                  <MenuItem value="ULTIMO_DIA_HABIL">Último día hábil del mes</MenuItem>
-                  <MenuItem value="DIA_DEL_MES">Día específico del mes</MenuItem>
-                </TextField>
-                {tipoDiaMensual === 'DIA_DEL_MES' && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <TextField fullWidth select label="Día del informe mensual" size="small" required
+                    value={tipoDiaMensual} onChange={cambiarTipoDiaMensual}>
+                    <MenuItem value="ULTIMO_DIA_HABIL">Último día hábil del mes</MenuItem>
+                    <MenuItem value="DIA_DEL_MES">Día específico del mes</MenuItem>
+                  </TextField>
+                  <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
+                    Día del mes para el envío del informe de avance mensual del proyecto para presentar a la empresa aliada.
+                  </Typography>
+                  {tipoDiaMensual === 'DIA_DEL_MES' && (
+                    <TextField
+                      fullWidth label="Día del mes" type="number" size="small" required
+                      value={diaMensual} onChange={cambiarDiaMensual}
+                      slotProps={{ htmlInput: { min: 1, max: 31, step: 1 } }}
+                      error={intentoGuardar && !diaMensualValido}
+                      helperText={intentoGuardar && !diaMensualValido
+                        ? 'Ingresá un día entre 1 y 31.'
+                        : 'La fecha efectiva en meses más cortos queda fuera del alcance de este incremento.'}
+                    />
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <TextField
-                    fullWidth label="Día del mes" type="number" size="small" required
-                    value={diaMensual} onChange={cambiarDiaMensual}
-                    slotProps={{ htmlInput: { min: 1, max: 31, step: 1 } }}
-                    error={intentoGuardar && !diaMensualValido}
-                    helperText={intentoGuardar && !diaMensualValido
-                      ? 'Ingresá un día entre 1 y 31.'
-                      : 'La fecha efectiva en meses más cortos queda fuera del alcance de este incremento.'}
-                  />
-                )}
-                <Typography variant="body2" sx={{ color: colores.textoSecundario }}>
-                  El responsable recibirá un correo con el informe de avance consolidado del
-                  proyecto y un enlace para consultar el detalle.
-                </Typography>
+                    fullWidth select label="Responsable del proyecto" size="small" required
+                    value={responsableMensual} onChange={cambiarResponsableMensual}
+                    error={intentoGuardar && !responsableMensualValido}
+                  >
+                    <MenuItem value="" disabled>Seleccionar usuario</MenuItem>
+                    {responsables.map(function mostrarResponsable(usuario) {
+                      return (
+                        <MenuItem key={usuario.idUsuario} value={String(usuario.idUsuario)}>
+                          {usuario.apellidos}, {usuario.nombres} ({usuario.email})
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
+                </Box>
               </Box>
             </Box>
 
@@ -598,8 +607,9 @@ function SeguimientoProyectoPage({
             )}
 
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-              <Button variant="outlined" type="button" disabled={guardando} onClick={irAProyectos}>
-                Ir a proyectos
+              <Button variant="text" type="button" disabled={guardando}
+                onClick={enFlujoAlta ? irAProyectos : irAlDetalle}>
+                {enFlujoAlta ? 'Ir a proyectos' : 'Volver al detalle'}
               </Button>
               <Button variant="contained" type="submit" disabled={guardando || responsables.length === 0}>
                 {guardando ? 'Guardando...' : 'Guardar configuración'}

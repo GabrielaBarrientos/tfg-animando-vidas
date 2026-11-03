@@ -46,6 +46,8 @@ import {
 
 interface PlanificacionProyectoPageProps {
   proyecto: Proyecto;
+  enFlujoAlta: boolean;
+  onVolverAlDetalle: () => void;
   onVolver: () => void;
   onContinuar: () => void;
   onIrADocentes: () => void;
@@ -132,6 +134,8 @@ function calcularMaximoClases(
 
   function PlanificacionProyectoPage({
     proyecto,
+    enFlujoAlta,
+    onVolverAlDetalle,
     onVolver,
     onContinuar,
     onIrADocentes,
@@ -157,7 +161,7 @@ function calcularMaximoClases(
   const [planificacionGuardada, setPlanificacionGuardada] = useState(false);
   const [cambiosSinGuardar, setCambiosSinGuardar] = useState(false);
   const [destinoPendiente, setDestinoPendiente] =
-    useState<'proyectos' | 'datos-generales' | 'docentes' | null>(null);
+    useState<'proyectos' | 'datos-generales' | 'docentes' | 'detalle' | null>(null);
 
   // Permite volver a consultar la planificación si falla la carga.
   const [intentoCarga, setIntentoCarga] = useState(0);
@@ -244,17 +248,19 @@ function calcularMaximoClases(
   }
 
   // Evitar abandonar la pantalla y perder cambios de la planificación.
-  function ejecutarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes') {
+  function ejecutarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes' | 'detalle') {
     if (destino === 'docentes') {
       onIrADocentes();
     } else if (destino === 'datos-generales') {
       onVerDatosGenerales();
+    } else if (destino === 'detalle') {
+      onVolverAlDetalle();
     } else {
       onVolver();
     }
   }
 
-  function solicitarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes') {
+  function solicitarNavegacion(destino: 'proyectos' | 'datos-generales' | 'docentes' | 'detalle') {
     if (guardando) {
       return;
     }
@@ -269,6 +275,10 @@ function calcularMaximoClases(
 
   function solicitarVolverAProyectos() {
     solicitarNavegacion('proyectos');
+  }
+
+  function solicitarVolverAlDetalle() {
+    solicitarNavegacion('detalle');
   }
 
   function solicitarVerDatosGenerales() {
@@ -464,19 +474,22 @@ function calcularMaximoClases(
           Proyectos
         </Link>
 
-        <Typography
-          title={proyecto.nombreCompleto}
-          sx={{
-            fontSize: 14,
-            color: '#667085',
-            maxWidth: { xs: 180, md: 450 },
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          {proyecto.nombreCompleto}
-        </Typography>
+        {enFlujoAlta ? (
+          <Typography
+            title={proyecto.nombreCompleto}
+            sx={{ fontSize: 14, color: '#667085', maxWidth: { xs: 180, md: 450 },
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            {proyecto.nombreCompleto}
+          </Typography>
+        ) : (
+          <Link component="button" type="button" underline="hover"
+            onClick={solicitarVolverAlDetalle} title={proyecto.nombreCompleto}
+            sx={{ fontSize: 14, color: '#667085', maxWidth: { xs: 180, md: 450 },
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {proyecto.nombreCompleto}
+          </Link>
+        )}
 
         <Typography
           sx={{
@@ -521,68 +534,70 @@ function calcularMaximoClases(
         )}
       </Box>
 
-      {/* Etapas de configuración */}
-      <Paper
-        variant="outlined"
-        sx={{
-          mb: 2,
-          minHeight: 48,
-          px: { xs: 1, sm: 2, md: 3 },
-          py: { xs: 1.5, sm: 1 },
-          display: 'flex',
-          alignItems: 'center',
-          borderRadius: 2,
-          boxSizing: 'border-box'
-        }}
-      >
-        <Stepper
-          activeStep={1}
+      {/* El Stepper solo forma parte del alta de proyecto. */}
+      {enFlujoAlta && (
+        <Paper
+          variant="outlined"
           sx={{
-            width: '100%',
-            minWidth: 0,
-            '& .MuiStep-root': { minWidth: 0, px: { xs: 0.25, md: 1 } },
-            '& .MuiStepLabel-root': {
-              flexDirection: { xs: 'column', md: 'row' }
-            },
-            '& .MuiStepLabel-label': {
-              fontSize: { xs: 10, sm: 12, md: 14 },
-              lineHeight: 1.3,
-              whiteSpace: 'normal',
-              textAlign: { xs: 'center', md: 'left' }
-            },
-            '& .MuiStepButton-root': {
-              width: '100%',
-              minWidth: 0,
-              minHeight: 32,
-              boxSizing: 'border-box',
-              margin: 0,
-              padding: { xs: 0.25, sm: 0.75 }
-            }
+            mb: 2,
+            minHeight: 48,
+            px: { xs: 1, sm: 2, md: 3 },
+            py: { xs: 1.5, sm: 1 },
+            display: 'flex',
+            alignItems: 'center',
+            borderRadius: 2,
+            boxSizing: 'border-box'
           }}
         >
-          <Step completed>
-            <StepButton onClick={solicitarVerDatosGenerales} disabled={guardando}>
-              Datos generales
-            </StepButton>
-          </Step>
-          <Step>
-            <StepLabel>Planificación</StepLabel>
-          </Step>
-          <Step completed={proyecto.estado === 'PLANIFICADO'}>
-            <StepButton
-              onClick={onContinuar}
-              disabled={!planificacionGuardada || guardando || cargando || errorCarga}
-            >
-              Seguimiento
-            </StepButton>
-          </Step>
-          <Step>
-            <StepButton onClick={solicitarVerDocentes} disabled={proyecto.estado !== 'PLANIFICADO' || guardando}>
-              Docentes
-            </StepButton>
-          </Step>
-        </Stepper>
-      </Paper>
+          <Stepper
+            activeStep={1}
+            sx={{
+              width: '100%',
+              minWidth: 0,
+              '& .MuiStep-root': { minWidth: 0, px: { xs: 0.25, md: 1 } },
+              '& .MuiStepLabel-root': {
+                flexDirection: { xs: 'column', md: 'row' }
+              },
+              '& .MuiStepLabel-label': {
+                fontSize: { xs: 10, sm: 12, md: 14 },
+                lineHeight: 1.3,
+                whiteSpace: 'normal',
+                textAlign: { xs: 'center', md: 'left' }
+              },
+              '& .MuiStepButton-root': {
+                width: '100%',
+                minWidth: 0,
+                minHeight: 32,
+                boxSizing: 'border-box',
+                margin: 0,
+                padding: { xs: 0.25, sm: 0.75 }
+              }
+            }}
+          >
+            <Step completed>
+              <StepButton onClick={solicitarVerDatosGenerales} disabled={guardando}>
+                Datos generales
+              </StepButton>
+            </Step>
+            <Step>
+              <StepLabel>Planificación</StepLabel>
+            </Step>
+            <Step completed={proyecto.estado === 'PLANIFICADO'}>
+              <StepButton
+                onClick={onContinuar}
+                disabled={!planificacionGuardada || guardando || cargando || errorCarga}
+              >
+                Seguimiento
+              </StepButton>
+            </Step>
+            <Step>
+              <StepButton onClick={solicitarVerDocentes} disabled={proyecto.estado !== 'PLANIFICADO' || guardando}>
+                Docentes
+              </StepButton>
+            </Step>
+          </Stepper>
+        </Paper>
+      )}
 
       {/* Formulario de planificación */}
       <Paper
@@ -779,10 +794,10 @@ function calcularMaximoClases(
                 type="button"
                 variant="text"
                 disabled={guardando}
-                onClick={solicitarVolverAProyectos}
+                onClick={enFlujoAlta ? solicitarVolverAProyectos : solicitarVolverAlDetalle}
                 sx={{ minWidth: 140, height: 36 }}
               >
-                Ir a proyectos
+                {enFlujoAlta ? 'Ir a proyectos' : 'Volver al detalle'}
               </Button>
 
               <Button

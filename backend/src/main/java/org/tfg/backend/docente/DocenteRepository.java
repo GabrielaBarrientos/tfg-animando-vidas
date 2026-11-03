@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface DocenteRepository extends JpaRepository<Docente, Long> {
+    long countByProyecto_IdProyecto(Long idProyecto);
+
     List<Docente> findByProyecto_IdProyectoOrderByApellidosAscNombresAsc(Long idProyecto);
 
     Optional<Docente> findByIdDocenteAndProyecto_IdProyecto(Long idDocente, Long idProyecto);

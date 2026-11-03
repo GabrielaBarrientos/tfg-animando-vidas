@@ -39,3 +39,7 @@ Cada funcionalidad comprende análisis, diseño técnico, implementación, integ
 En desarrollo.
 
 Etapa actual: implementación de la gestión de docentes.
+
+### Incremento 2.7 — Detalle del proyecto
+
+La Pantalla 7 permite consultar el resumen del proyecto y su configuración según los permisos del usuario. Véase [documentación del Incremento 2.7](documentacion/incremento-2.7.md). Las secciones de talleres, encuestas y evidencias muestran el estado pendiente de integración, sin indicadores inventados.

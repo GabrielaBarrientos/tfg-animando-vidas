@@ -37,10 +37,8 @@ import { colores } from '../theme';
 
 interface ProyectosPageProps {
   puedeCrearProyecto: boolean;
-  puedeConsultarDocentes: boolean;
   onNuevoProyecto: () => void;
-  onPlanificarProyecto(proyecto: Proyecto): void;
-  onConsultarDocentes(proyecto: Proyecto): void;
+  onVerDetalle(proyecto: Proyecto): void;
   onSesionExpirada: () => void;
 }
 
@@ -63,40 +61,10 @@ function obtenerNombreEstado(estado: string): string {
   }
 }
 
-interface AccesoPlanificacionProps {
-  proyecto: Proyecto;
-  onPlanificarProyecto(proyecto: Proyecto): void;
-}
-
-function AccesoPlanificacion({
-  proyecto,
-  onPlanificarProyecto
-}: AccesoPlanificacionProps) {
-
-  function abrirPlanificacion() {
-    onPlanificarProyecto(proyecto);
-  }
-
-  return (
-    <IconButton
-      size="small"
-      title="Abrir configuración del proyecto"
-      aria-label={'Abrir configuración de ' + proyecto.nombre}
-      onClick={abrirPlanificacion}
-    >
-      <ChevronRightIcon
-        sx={{ color: colores.textoPrimario }}
-      />
-    </IconButton>
-  );
-}
-
 function ProyectosPage({
   puedeCrearProyecto,
-  puedeConsultarDocentes,
   onNuevoProyecto,
-  onPlanificarProyecto,
-  onConsultarDocentes,
+  onVerDetalle,
   onSesionExpirada
 }: ProyectosPageProps) {
 
@@ -484,7 +452,18 @@ function ProyectosPage({
                     <TableRow
                       key={proyecto.idProyecto}
                       hover
+                      tabIndex={0}
+                      role="button"
+                      aria-label={'Consultar detalle de ' + proyecto.nombre}
+                      onClick={function abrirDetalle() { onVerDetalle(proyecto); }}
+                      onKeyDown={function navegarConTeclado(evento) {
+                        if (evento.key === 'Enter' || evento.key === ' ') {
+                          evento.preventDefault();
+                          onVerDetalle(proyecto);
+                        }
+                      }}
                       sx={{
+                        cursor: 'pointer',
                         height: 52,
                         '& td': {
                           py: 1
@@ -519,28 +498,17 @@ function ProyectosPage({
                       </TableCell>
 
                       <TableCell align="right">
-                        {puedeCrearProyecto &&
-                        (proyecto.estado === 'PENDIENTE_PLANIFICACION' ||
-                        proyecto.estado === 'PLANIFICADO') ? (
-                          <AccesoPlanificacion
-                            proyecto={proyecto}
-                            onPlanificarProyecto={onPlanificarProyecto}
-                          />
-                        ) : puedeConsultarDocentes && (proyecto.estado === 'PLANIFICADO' || proyecto.estado === 'EN_CURSO' || proyecto.estado === 'FINALIZADO') ? (
-                          <IconButton
-                            size="small"
-                            title="Consultar docentes del proyecto"
-                            aria-label={'Consultar docentes de ' + proyecto.nombre}
-                            onClick={function abrirDocentes() { onConsultarDocentes(proyecto); }}
-                          >
-                            <ChevronRightIcon sx={{ color: colores.textoPrimario }} />
-                          </IconButton>
-                        ) : (
-                          <ChevronRightIcon
-                            aria-hidden="true"
-                            sx={{ color: colores.textoPrimario }}
-                          />
-                        )}
+                        <IconButton
+                          size="small"
+                          title="Consultar detalle del proyecto"
+                          aria-label={'Consultar detalle de ' + proyecto.nombre}
+                          onClick={function abrirDetalle(evento) {
+                            evento.stopPropagation();
+                            onVerDetalle(proyecto);
+                          }}
+                        >
+                          <ChevronRightIcon sx={{ color: colores.textoPrimario }} />
+                        </IconButton>
                       </TableCell>
 
                     </TableRow>
