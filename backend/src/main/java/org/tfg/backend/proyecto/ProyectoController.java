@@ -20,11 +20,14 @@ public class ProyectoController {
     private final ProyectoService proyectoService;
 
     private final ProyectoConsultaService proyectoConsultaService;
+    private final DetalleProyectoService detalleProyectoService;
 
-    public ProyectoController(ProyectoService proyectoService, ProyectoConsultaService proyectoConsultaService) {
+    public ProyectoController(ProyectoService proyectoService, ProyectoConsultaService proyectoConsultaService,
+            DetalleProyectoService detalleProyectoService) {
 
     this.proyectoService = proyectoService;
     this.proyectoConsultaService = proyectoConsultaService;
+    this.detalleProyectoService = detalleProyectoService;
     }
 
     @PostMapping
@@ -48,6 +51,12 @@ public class ProyectoController {
     public List<ProyectoResponse> listarProyectos(@AuthenticationPrincipal OidcUser usuarioGoogle) {
 
         return proyectoConsultaService.listarProyectos(usuarioGoogle);
+    }
+
+    @GetMapping("/{idProyecto}/detalle")
+    public DetalleProyectoResponse obtenerDetalle(@PathVariable Long idProyecto,
+            @AuthenticationPrincipal OidcUser usuarioGoogle) {
+        return detalleProyectoService.obtener(idProyecto, usuarioGoogle);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

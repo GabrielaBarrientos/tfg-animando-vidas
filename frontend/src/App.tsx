@@ -8,6 +8,7 @@ import PlanificacionProyectoPage from './pages/PlanificacionProyectoPage';
 import SeguimientoProyectoPage from './pages/SeguimientoProyectoPage';
 import DatosGeneralesProyectoPage from './pages/DatosGeneralesProyectoPage';
 import DocentesProyectoPage from './pages/DocentesProyectoPage';
+import DetalleProyectoPage from './pages/DetalleProyectoPage';
 
 import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
 
@@ -19,7 +20,7 @@ import {
 import type { Proyecto } from './services/proyectosApi';
 
 // Pantallas disponibles en esta etapa.
-type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento' | 'docentes';
+type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento' | 'docentes' | 'detalle';
 
 function App() {
 
@@ -31,6 +32,10 @@ function App() {
 
   // Pantalla que se está mostrando.
   const [pantalla, setPantalla] = useState<Pantalla>('listado');
+
+  // El Stepper solo pertenece al flujo de alta de un proyecto.
+  // Las pantallas abiertas desde Detalle se muestran sin Stepper.
+  const [enFlujoAlta, setEnFlujoAlta] = useState(true);
 
   // Proyecto que se está configurando.
   const [proyectoSeleccionado, setProyectoSeleccionado] =
@@ -74,12 +79,14 @@ function App() {
 
   // Navegar al formulario de alta.
   function mostrarAltaProyecto() {
+    setEnFlujoAlta(true);
     setProyectoSeleccionado(null);
     setPantalla('alta');
   }
 
   // Abrir la planificación de un proyecto.
   function mostrarPlanificacionProyecto(proyecto: Proyecto) {
+    setEnFlujoAlta(true);
     setProyectoSeleccionado(proyecto);
     setPantalla('planificacion');
   }
@@ -97,9 +104,29 @@ function App() {
     setPantalla('docentes');
   }
 
-  function abrirDocentesDesdeListado(proyecto: Proyecto) {
+  function mostrarDetalleProyecto(proyecto: Proyecto) {
+    setEnFlujoAlta(false);
     setProyectoSeleccionado(proyecto);
+    setPantalla('detalle');
+  }
+
+  function volverAlDetalle() {
+    setPantalla('detalle');
+  }
+
+  function mostrarDocentesDesdeDetalle() {
+    setEnFlujoAlta(false);
     setPantalla('docentes');
+  }
+
+  function mostrarPlanificacionDesdeDetalle() {
+    setEnFlujoAlta(false);
+    setPantalla('planificacion');
+  }
+
+  function mostrarSeguimientoDesdeDetalle() {
+    setEnFlujoAlta(false);
+    setPantalla('seguimiento');
   }
 
   function finalizarGestionDocentes(sinDocentes: boolean) {
@@ -267,6 +294,8 @@ function App() {
       >
         <PlanificacionProyectoPage
           proyecto={proyectoSeleccionado}
+          enFlujoAlta={enFlujoAlta}
+          onVolverAlDetalle={volverAlDetalle}
           onVolver={volverAlListado}
           onContinuar={mostrarSeguimientoProyecto}
           onIrADocentes={mostrarDocentesProyecto}
@@ -283,6 +312,8 @@ function App() {
       <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
         <SeguimientoProyectoPage
           proyecto={proyectoSeleccionado}
+          enFlujoAlta={enFlujoAlta}
+          onVolverAlDetalle={volverAlDetalle}
           onVolver={volverAPlanificacion}
           onVerDatosGenerales={mostrarDatosGeneralesProyecto}
           onVolverAlListado={volverAlListado}
@@ -300,12 +331,31 @@ function App() {
       <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
         <DocentesProyectoPage
           proyecto={proyectoSeleccionado}
+          enFlujoAlta={enFlujoAlta}
+          onVolverAlDetalle={volverAlDetalle}
           puedeGestionar={usuario.rol === 'ADMINISTRADOR'}
           onIrADatosGenerales={mostrarDatosGeneralesProyecto}
           onIrAPlanificacion={volverAPlanificacion}
           onIrASeguimiento={mostrarSeguimientoProyecto}
           onFinalizar={finalizarGestionDocentes}
           onVolverAlListado={volverAlListado}
+          onSesionExpirada={manejarSesionExpirada}
+        />
+      </AppLayout>
+    );
+  }
+
+  // Pantalla 7: consulta de detalle del proyecto para todos los perfiles autorizados.
+  if (pantalla === 'detalle' && proyectoSeleccionado !== null) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <DetalleProyectoPage
+          proyecto={proyectoSeleccionado}
+          rol={usuario.rol}
+          onVolverAlListado={volverAlListado}
+          onIrADocentes={mostrarDocentesDesdeDetalle}
+          onIrAPlanificacion={mostrarPlanificacionDesdeDetalle}
+          onIrASeguimiento={mostrarSeguimientoDesdeDetalle}
           onSesionExpirada={manejarSesionExpirada}
         />
       </AppLayout>
@@ -321,10 +371,8 @@ function App() {
       <ProyectosPage
         key={versionListado}
         puedeCrearProyecto={usuario.rol === 'ADMINISTRADOR'}
-        puedeConsultarDocentes={usuario.rol === 'OPERATIVO'}
         onNuevoProyecto={mostrarAltaProyecto}
-        onPlanificarProyecto={mostrarPlanificacionProyecto}
-        onConsultarDocentes={abrirDocentesDesdeListado}
+        onVerDetalle={mostrarDetalleProyecto}
         onSesionExpirada={manejarSesionExpirada}
       />
       <Snackbar

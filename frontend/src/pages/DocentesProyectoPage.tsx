@@ -19,6 +19,8 @@ import { colores } from '../theme';
 interface DocentesProyectoPageProps {
   proyecto: Proyecto;
   puedeGestionar: boolean;
+  enFlujoAlta: boolean;
+  onVolverAlDetalle: () => void;
   onIrADatosGenerales: () => void;
   onIrAPlanificacion: () => void;
   onIrASeguimiento: () => void;
@@ -49,8 +51,9 @@ function validarFormulario(datos: DatosDocente): string {
 }
 
 function DocentesProyectoPage({
-  proyecto, puedeGestionar, onIrADatosGenerales, onIrAPlanificacion,
-  onIrASeguimiento, onFinalizar, onVolverAlListado, onSesionExpirada
+  proyecto, puedeGestionar, enFlujoAlta, onVolverAlDetalle,
+  onIrADatosGenerales, onIrAPlanificacion, onIrASeguimiento,
+  onFinalizar, onVolverAlListado, onSesionExpirada
 }: DocentesProyectoPageProps) {
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -256,10 +259,19 @@ function DocentesProyectoPage({
           sx={{ color: '#667085', '&:hover': { color: '#667085' } }}>Inicio</Link>
         <Link component="button" type="button" underline="hover" onClick={onVolverAlListado}
           sx={{ color: '#667085', '&:hover': { color: '#667085' } }}>Proyectos</Link>
-        <Typography title={proyecto.nombreCompleto} sx={{ color: colores.textoSecundario,
-          maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {proyecto.nombreCompleto}
-        </Typography>
+        {enFlujoAlta ? (
+          <Typography title={proyecto.nombreCompleto} sx={{ color: colores.textoSecundario,
+            maxWidth: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {proyecto.nombreCompleto}
+          </Typography>
+        ) : (
+          <Link component="button" type="button" underline="hover" onClick={onVolverAlDetalle}
+            title={proyecto.nombreCompleto}
+            sx={{ color: '#667085', maxWidth: 400, overflow: 'hidden',
+              textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {proyecto.nombreCompleto}
+          </Link>
+        )}
         <Typography sx={{ color: colores.verdeOscuro }}>Docentes</Typography>
       </Breadcrumbs>
 
@@ -272,7 +284,7 @@ function DocentesProyectoPage({
             fontSize: 14, fontWeight: 500 }} />
       </Box>
 
-      {puedeGestionar && (
+      {puedeGestionar && enFlujoAlta && (
         <Paper variant="outlined" sx={{ mb: 2, minHeight: 48, px: { xs: 1, sm: 2, md: 3 },
           py: { xs: 1.5, sm: 1 }, display: 'flex', alignItems: 'center', borderRadius: 2 }}>
           <Stepper activeStep={3} sx={{ width: '100%', minWidth: 0,
@@ -378,8 +390,10 @@ function DocentesProyectoPage({
           </TableContainer>
         )}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-          <Button variant="outlined" onClick={onVolverAlListado}>Volver a proyectos</Button>
-          {puedeGestionar && (
+          <Button variant="outlined" onClick={enFlujoAlta ? onVolverAlListado : onVolverAlDetalle}>
+            {enFlujoAlta ? 'Volver a proyectos' : 'Volver al detalle'}
+          </Button>
+          {puedeGestionar && enFlujoAlta && (
             <Button variant="contained" onClick={finalizar} disabled={cargando || errorCarga !== '' || procesando}>
               Finalizar
             </Button>
