@@ -2,16 +2,17 @@ import { useEffect, useState } from 'react';
 
 import {
   Alert, Box, Breadcrumbs, Button, Chip, CircularProgress,
-  Divider, Link, Paper, Tab, Tabs, Typography
+  Divider, Link, Paper, Typography
 } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { obtenerDetalleProyecto, type DetalleProyecto } from '../services/detalleProyectoApi';
 import { SesionExpiradaError } from '../services/erroresApi';
+import { listarTalleres, sincronizarTalleres, type TallerResumen } from '../services/talleresApi';
 import type { Proyecto } from '../services/proyectosApi';
 import { colores } from '../theme';
+import ProyectoTabs, { type SolapaProyecto } from '../components/ProyectoTabs';
 
-type Solapa = 'resumen' | 'docentes' | 'preguntas' | 'talleres' | 'evidencias' | 'encuestas' | 'avance';
 
 interface DetalleProyectoPageProps {
   proyecto: Proyecto;
@@ -20,7 +21,9 @@ interface DetalleProyectoPageProps {
   onIrADocentes: () => void;
   onIrAPlanificacion: () => void;
   onIrASeguimiento: () => void;
+  onIrATalleres: () => void;
   onSesionExpirada: () => void;
+  solapaInicial?: SolapaProyecto;
 }
 
 function obtenerNombreEstado(estado: string): string {
@@ -97,13 +100,15 @@ function Panel({ titulo, children, accion }: PanelProps) {
 
 function DetalleProyectoPage({
   proyecto, rol, onVolverAlListado, onIrADocentes,
-  onIrAPlanificacion, onIrASeguimiento, onSesionExpirada
+  onIrAPlanificacion, onIrASeguimiento, onIrATalleres, onSesionExpirada, solapaInicial = 'resumen'
 }: DetalleProyectoPageProps) {
   const [detalle, setDetalle] = useState<DetalleProyecto | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  const [advertenciaTalleres, setAdvertenciaTalleres] = useState('');
+  const [talleresResumen, setTalleresResumen] = useState<TallerResumen[] | null>(null);
   const [versionConsulta, setVersionConsulta] = useState(0);
-  const [solapa, setSolapa] = useState<Solapa>('resumen');
+  const [solapa, setSolapa] = useState<SolapaProyecto>(solapaInicial);
 
   useEffect(function consultarDetalleAlAbrir() {
     let activo = true;
@@ -132,6 +137,42 @@ function DetalleProyectoPage({
     return function cancelarConsulta() { activo = false; };
   }, [proyecto.idProyecto, versionConsulta, onSesionExpirada]);
 
+  // Al consultar un proyecto, los perfiles internos sincronizan antes de cargar el resumen.
+  // Si falla el origen remoto, se intenta igualmente mostrar la copia local.
+  useEffect(function consultarTalleresDelProyecto() {
+    if (proyecto.estado === 'PENDIENTE_PLANIFICACION') return;
+    let activo = true;
+    async function ejecutar() {
+      let advertencia = '';
+      if (rol !== 'EXTERNO') {
+        try {
+          await sincronizarTalleres(proyecto.idProyecto);
+          const actualizado = await obtenerDetalleProyecto(proyecto.idProyecto);
+          if (activo) setDetalle(actualizado);
+        } catch (excepcion) {
+          if (excepcion instanceof SesionExpiradaError) {
+            onSesionExpirada();
+            return;
+          }
+          advertencia = 'No se pudieron actualizar los talleres desde la plataforma educativa.';
+        }
+      }
+      try {
+        const lista = await listarTalleres(proyecto.idProyecto);
+        if (activo) setTalleresResumen(lista);
+      } catch (excepcion) {
+        if (excepcion instanceof SesionExpiradaError) {
+          onSesionExpirada();
+          return;
+        }
+        advertencia = 'No se pudo consultar el resumen de talleres del proyecto.';
+      }
+      if (activo) setAdvertenciaTalleres(advertencia);
+    }
+    void ejecutar();
+    return function cancelar() { activo = false; };
+  }, [proyecto.idProyecto, proyecto.estado, rol, onSesionExpirada]);
+
   function reintentar() {
     setError('');
     setCargando(true);
@@ -143,12 +184,16 @@ function DetalleProyectoPage({
   }
 
   function abrirTalleres() {
-    setSolapa('talleres');
+    onIrATalleres();
   }
 
-  function cambiarSolapa(_evento: React.SyntheticEvent, valor: Solapa) {
+  function cambiarSolapa(valor: SolapaProyecto) {
     if (valor === 'docentes' && rol !== 'EXTERNO') {
       onIrADocentes();
+      return;
+    }
+    if (valor === 'talleres') {
+      onIrATalleres();
       return;
     }
     setSolapa(valor);
@@ -156,6 +201,16 @@ function DetalleProyectoPage({
 
   const datosProyecto = detalle?.proyecto ?? proyecto;
   const puedeEditar = rol === 'ADMINISTRADOR';
+  let talleresAtrasados = 0;
+  let proximosAtraso = 0;
+  let evidenciasPendientes = 0;
+  if (talleresResumen !== null) {
+    for (const taller of talleresResumen) {
+      if (taller.estado === 'ATRASADO') talleresAtrasados++;
+      if (taller.estado === 'PROXIMO_ATRASO') proximosAtraso++;
+      if (taller.evidencias === 'PENDIENTES') evidenciasPendientes++;
+    }
+  }
 
   return (
     <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', padding: '12px 24px' }}>
@@ -186,16 +241,7 @@ function DetalleProyectoPage({
         flexDirection: 'column',
         overflow: 'hidden'
       }}>
-        <Tabs value={solapa} onChange={cambiarSolapa} variant="scrollable" scrollButtons="auto"
-          aria-label="Secciones del proyecto" sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-          <Tab value="resumen" label="Resumen" />
-          <Tab value="docentes" label="Docentes" />
-          <Tab value="preguntas" label="Preguntas" />
-          <Tab value="talleres" label="Talleres" />
-          <Tab value="evidencias" label="Evidencias" />
-          <Tab value="encuestas" label="Encuestas" />
-          <Tab value="avance" label="Avance" />
-        </Tabs>
+        <ProyectoTabs valor={solapa} onCambiar={cambiarSolapa} />
 
         <Box sx={{ p: { xs: 2, md: 3 }, flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {cargando && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
@@ -289,12 +335,21 @@ function DetalleProyectoPage({
 
                 <Panel titulo="Talleres"
                   accion={<Button variant="text" onClick={abrirTalleres}>Ver talleres</Button>}>
-                  <Alert severity="info" sx={{ mb: 2 }}>
-                    Sin sincronización con la plataforma educativa.
-                  </Alert>
-                  <Typography color="text.secondary" variant="body2">
-                    El total de talleres y los indicadores de avance estarán disponibles cuando se implemente la integración.
-                  </Typography>
+                  {advertenciaTalleres !== '' && <Alert severity="warning" sx={{ mb: 2 }}>
+                    {advertenciaTalleres}
+                  </Alert>}
+                  {talleresResumen === null ? (
+                    <Typography color="text.secondary" variant="body2">
+                      Sin datos de talleres disponibles para el proyecto.
+                    </Typography>
+                  ) : (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
+                      <Dato titulo="Talleres" valor={talleresResumen.length} />
+                      <Dato titulo="Atrasados" valor={talleresAtrasados} />
+                      <Dato titulo="Próximos a atraso" valor={proximosAtraso} />
+                      <Dato titulo="Evidencias pendientes" valor={evidenciasPendientes} />
+                    </Box>
+                  )}
                 </Panel>
               </Box>
             </Box>
@@ -319,4 +374,3 @@ function DetalleProyectoPage({
 }
 
 export default DetalleProyectoPage;
-

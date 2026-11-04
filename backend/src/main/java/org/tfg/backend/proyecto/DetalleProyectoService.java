@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import org.tfg.backend.docente.DocenteRepository;
+import org.tfg.backend.docente.DocenteProyectoRepository;
 import org.tfg.backend.planificacion.PlanificacionProyecto;
 import org.tfg.backend.planificacion.PlanificacionProyectoRepository;
 import org.tfg.backend.seguimiento.ConfiguracionSeguimiento;
@@ -28,14 +28,14 @@ public class DetalleProyectoService {
     private final UsuarioRepository usuarioRepository;
     private final PlanificacionProyectoRepository planificacionRepository;
     private final ConfiguracionSeguimientoRepository seguimientoRepository;
-    private final DocenteRepository docenteRepository;
+    private final DocenteProyectoRepository docenteRepository;
 
     public DetalleProyectoService(
             ProyectoRepository proyectoRepository,
             UsuarioRepository usuarioRepository,
             PlanificacionProyectoRepository planificacionRepository,
             ConfiguracionSeguimientoRepository seguimientoRepository,
-            DocenteRepository docenteRepository) {
+            DocenteProyectoRepository docenteRepository) {
         this.proyectoRepository = proyectoRepository;
         this.usuarioRepository = usuarioRepository;
         this.planificacionRepository = planificacionRepository;

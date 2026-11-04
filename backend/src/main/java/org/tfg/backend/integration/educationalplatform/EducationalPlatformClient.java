@@ -1,6 +1,9 @@
 
 package org.tfg.backend.integration.educationalplatform;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -24,6 +27,19 @@ public class EducationalPlatformClient {
                 .uri("/health")
                 .retrieve()
                 .body(PlatformHealthResponse.class);
+    }
+
+    public List<PlatformTallerResponse> obtenerTalleres(
+            String nombreProyecto, Short anioProyecto, String nombreEmpresa) {
+        PlatformTallerResponse[] datos = restClient.get()
+                .uri("/proyecto?nombreProyecto={nombreProyecto}&anioProyecto={anioProyecto}&nombreEmpresa={nombreEmpresa}",
+                        nombreProyecto, anioProyecto, nombreEmpresa)
+                .retrieve()
+                .body(PlatformTallerResponse[].class);
+        if (datos == null) {
+            throw new IllegalStateException("La plataforma devolvió una respuesta vacía");
+        }
+        return Arrays.asList(datos);
     }
 
     public record PlatformHealthResponse(

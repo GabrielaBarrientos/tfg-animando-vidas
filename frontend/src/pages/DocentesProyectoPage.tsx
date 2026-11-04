@@ -15,6 +15,7 @@ import { eliminarDocente, guardarDocente, listarDocentes,
 import { SesionExpiradaError } from '../services/erroresApi';
 import type { Proyecto } from '../services/proyectosApi';
 import { colores } from '../theme';
+import { generarUsuarioPlataforma, formatoUsuarioValido } from '../services/generarUsuarioPlataforma';
 
 interface DocentesProyectoPageProps {
   proyecto: Proyecto;
@@ -30,22 +31,33 @@ interface DocentesProyectoPageProps {
 }
 
 const formularioVacio: DatosDocente = {
-  nombres: '', apellidos: '', email: '', pais: '', provincia: '', centroEducativo: ''
+  nombres: '', apellidos: '', email: '', telefono: '', pais: '', provincia: '', centroEducativo: '',
+  cargo: '', grado: '', materia: '', cargaHoraria: 0, cantidadAlumnos: 0, usuarioPlataforma: ''
 };
 
 function validarFormulario(datos: DatosDocente): string {
   if (datos.nombres.trim() === '' || datos.apellidos.trim() === ''
-      || datos.email.trim() === '' || datos.pais.trim() === ''
-      || datos.provincia.trim() === '' || datos.centroEducativo.trim() === '') {
+      || datos.email.trim() === '' || datos.telefono.trim() === '' || datos.pais.trim() === ''
+      || datos.provincia.trim() === '' || datos.centroEducativo.trim() === ''
+      || datos.cargo.trim() === '' || datos.grado.trim() === '' || datos.materia.trim() === '') {
     return 'Todos los campos son obligatorios.';
   }
   if (datos.nombres.length > 200 || datos.apellidos.length > 200
       || datos.email.length > 320 || datos.pais.length > 100
-      || datos.provincia.length > 150 || datos.centroEducativo.length > 200) {
+      || datos.provincia.length > 150 || datos.centroEducativo.length > 200
+      || datos.telefono.length > 30 || datos.cargo.length > 150
+      || datos.grado.length > 100 || datos.materia.length > 150) {
     return 'Uno de los campos excede la longitud máxima permitida.';
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(datos.email.trim())) {
     return 'Ingresá un correo electrónico válido.';
+  }
+  if (!Number.isInteger(datos.cargaHoraria) || datos.cargaHoraria <= 0
+      || !Number.isInteger(datos.cantidadAlumnos) || datos.cantidadAlumnos <= 0) {
+    return 'Carga horaria y cantidad de alumnos deben ser enteros mayores que cero.';
+  }
+  if (!formatoUsuarioValido(datos.usuarioPlataforma)) {
+    return 'El usuario debe tener mínimo 8 caracteres, solo letras minúsculas y al menos un punto.';
   }
   return '';
 }
@@ -64,6 +76,7 @@ function DocentesProyectoPage({
   const [dialogoFormulario, setDialogoFormulario] = useState(false);
   const [idEditando, setIdEditando] = useState<number | null>(null);
   const [formulario, setFormulario] = useState<DatosDocente>(formularioVacio);
+  const [usuarioEditado, setUsuarioEditado] = useState(false);
   const [errorFormulario, setErrorFormulario] = useState('');
   const [docenteAEliminar, setDocenteAEliminar] = useState<Docente | null>(null);
   const [procesando, setProcesando] = useState(false);
@@ -115,15 +128,38 @@ function DocentesProyectoPage({
   }
 
   function cambiarCampo(campo: keyof DatosDocente, valor: string) {
-    setFormulario(function actualizar(datosActuales) {
-      return { ...datosActuales, [campo]: valor };
+    setFormulario(function actualizar(actuales) {
+      const siguientes = { ...actuales, [campo]: valor };
+      if (campo === 'usuarioPlataforma') {
+        return siguientes;
+      }
+      if (!usuarioEditado && (campo === 'nombres' || campo === 'apellidos')) {
+        siguientes.usuarioPlataforma = generarUsuarioPlataforma(siguientes.nombres, siguientes.apellidos);
+      }
+      return siguientes;
+    });
+    if (campo === 'usuarioPlataforma') setUsuarioEditado(true);
+    setErrorFormulario('');
+  }
+
+  function cambiarEntero(campo: 'cargaHoraria' | 'cantidadAlumnos', valor: string) {
+    setFormulario(function actualizar(actuales) {
+      return { ...actuales, [campo]: valor === '' ? 0 : Number(valor) };
     });
     setErrorFormulario('');
   }
 
+  function regenerarUsuario() {
+    setFormulario(function actualizar(actuales) {
+      return { ...actuales, usuarioPlataforma: generarUsuarioPlataforma(actuales.nombres, actuales.apellidos) };
+    });
+    setUsuarioEditado(false);
+  }
+
   function abrirAlta() {
     setIdEditando(null);
-    setFormulario(formularioVacio);
+    setFormulario({ ...formularioVacio });
+    setUsuarioEditado(false);
     setErrorFormulario('');
     setDialogoFormulario(true);
   }
@@ -134,10 +170,18 @@ function DocentesProyectoPage({
       nombres: docente.nombres,
       apellidos: docente.apellidos,
       email: docente.email,
+      telefono: docente.telefono,
+      cargo: docente.cargo,
+      grado: docente.grado,
+      materia: docente.materia,
+      cargaHoraria: docente.cargaHoraria,
+      cantidadAlumnos: docente.cantidadAlumnos,
+      usuarioPlataforma: docente.usuarioPlataforma,
       pais: docente.pais,
       provincia: docente.provincia,
       centroEducativo: docente.centroEducativo
     });
+    setUsuarioEditado(true);
     setErrorFormulario('');
     setDialogoFormulario(true);
   }
@@ -244,7 +288,7 @@ function DocentesProyectoPage({
       paises.push(docente.pais);
     }
     const texto = (docente.nombres + ' ' + docente.apellidos + ' '
-      + docente.centroEducativo + ' ' + docente.email).toLocaleLowerCase('es');
+      + docente.centroEducativo + ' ' + docente.usuarioPlataforma + ' ' + docente.email).toLocaleLowerCase('es');
     if (texto.includes(busqueda.trim().toLocaleLowerCase('es'))
         && (filtroPais === '' || docente.pais === filtroPais)) {
       docentesFiltrados.push(docente);
@@ -352,6 +396,7 @@ function DocentesProyectoPage({
                   <TableCell>Provincia/Región/Departamento</TableCell>
                   <TableCell>Nombres y apellidos</TableCell>
                   <TableCell>Correo electrónico</TableCell>
+                  <TableCell>Usuario de plataforma</TableCell>
                   {puedeGestionar && <TableCell align="right">Acciones</TableCell>}
                 </TableRow>
               </TableHead>
@@ -364,6 +409,7 @@ function DocentesProyectoPage({
                       <TableCell>{docente.provincia}</TableCell>
                       <TableCell>{docente.nombres} {docente.apellidos}</TableCell>
                       <TableCell>{docente.email}</TableCell>
+                      <TableCell>{docente.usuarioPlataforma}</TableCell>
                       {puedeGestionar && (
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           <IconButton aria-label={'Modificar docente ' + docente.apellidos}
@@ -380,7 +426,7 @@ function DocentesProyectoPage({
                   );
                 })}
                 {docentesFiltrados.length === 0 && (
-                  <TableRow><TableCell colSpan={puedeGestionar ? 6 : 5}>
+                  <TableRow><TableCell colSpan={puedeGestionar ? 7 : 6}>
                     {docentes.length === 0 ? 'El proyecto no tiene docentes registrados.'
                       : 'No se encontraron docentes con los filtros seleccionados.'}
                   </TableCell></TableRow>
@@ -405,7 +451,7 @@ function DocentesProyectoPage({
         <Box component="form" onSubmit={enviarFormulario} noValidate>
           <DialogTitle>{idEditando === null ? 'Registrar docente' : 'Modificar docente'}</DialogTitle>
           <DialogContent sx={{ display: 'grid',
-            gridTemplateColumns: { xs: 'minmax(0, 400px)', lg: '400px 400px' },
+            gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
             gap: 4, '&&': { pt: 2 } }}>
             <TextField label="Nombres *" value={formulario.nombres} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('nombres', e.target.value); }} />
@@ -420,6 +466,26 @@ function DocentesProyectoPage({
               onChange={function cambiar(e) { cambiarCampo('provincia', e.target.value); }} />
             <TextField label="Centro educativo *" value={formulario.centroEducativo} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('centroEducativo', e.target.value); }} />
+            <TextField label="Teléfono *" value={formulario.telefono} fullWidth size="small"
+              onChange={function cambiar(e) { cambiarCampo('telefono', e.target.value); }} />
+            <TextField label="Cargo *" value={formulario.cargo} fullWidth size="small"
+              onChange={function cambiar(e) { cambiarCampo('cargo', e.target.value); }} />
+            <TextField label="Grado *" value={formulario.grado} fullWidth size="small"
+              onChange={function cambiar(e) { cambiarCampo('grado', e.target.value); }} />
+            <TextField label="Materia *" value={formulario.materia} fullWidth size="small"
+              onChange={function cambiar(e) { cambiarCampo('materia', e.target.value); }} />
+            <TextField label="Carga horaria (horas cátedra) *" type="number" value={formulario.cargaHoraria || ''}
+              fullWidth size="small" slotProps={{ htmlInput: { min: 1, step: 1 } }}
+              onChange={function cambiar(e) { cambiarEntero('cargaHoraria', e.target.value); }} />
+            <TextField label="Cantidad de alumnos *" type="number" value={formulario.cantidadAlumnos || ''}
+              fullWidth size="small" slotProps={{ htmlInput: { min: 1, step: 1 } }}
+              onChange={function cambiar(e) { cambiarEntero('cantidadAlumnos', e.target.value); }} />
+            <Box sx={{ display: 'flex', gridColumn: '1 / -1', alignItems: 'start', gap: 1 }}>
+              <TextField label="Usuario de plataforma *" value={formulario.usuarioPlataforma} fullWidth size="small"
+                helperText="Mínimo 8 caracteres; letras y puntos, sin números. Siempre editable."
+                onChange={function cambiar(e) { cambiarCampo('usuarioPlataforma', e.target.value); }} />
+              <Button variant="outlined" type="button" onClick={regenerarUsuario}>Generar</Button>
+            </Box>
             {errorFormulario !== '' && <Alert severity="error" sx={{ gridColumn: '1 / -1' }}>{errorFormulario}</Alert>}
           </DialogContent>
           <DialogActions sx={{ p: 3 }}>

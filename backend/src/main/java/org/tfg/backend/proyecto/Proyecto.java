@@ -34,6 +34,12 @@ public class Proyecto {
     @Column(name = "estado", length = 50, nullable = false)
     private EstadoProyecto estado;
 
+    @Column(name = "ultima_sincronizacion_talleres")
+    private OffsetDateTime ultimaSincronizacionTalleres;
+
+    @Column(name = "cantidad_talleres_plataforma", nullable = false)
+    private int cantidadTalleresPlataforma;
+
     @Column(name = "f_creacion", nullable = false, updatable = false)
     private OffsetDateTime fechaCreacion;
 
@@ -93,6 +99,31 @@ public class Proyecto {
         if (estado == EstadoProyecto.PENDIENTE_PLANIFICACION) {
             estado = EstadoProyecto.PLANIFICADO;
         }
+    }
+
+    /** Registro de la última sincronización exitosa con la plataforma educativa. */
+    public void registrarSincronizacionTalleres(int cantidadTalleres) {
+        if (cantidadTalleres < 0) {
+            throw new IllegalArgumentException("La cantidad de talleres no puede ser negativa");
+        }
+        cantidadTalleresPlataforma = cantidadTalleres;
+        ultimaSincronizacionTalleres = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    /** El estado depende de las copias locales, incluidas las pendientes de confirmación. */
+    public void actualizarEstadoPorTalleres(boolean tieneTalleresLocales) {
+        if (estado != EstadoProyecto.PLANIFICADO && estado != EstadoProyecto.EN_CURSO) {
+            return;
+        }
+        estado = tieneTalleresLocales ? EstadoProyecto.EN_CURSO : EstadoProyecto.PLANIFICADO;
+    }
+
+    public OffsetDateTime getUltimaSincronizacionTalleres() {
+        return ultimaSincronizacionTalleres;
+    }
+
+    public int getCantidadTalleresPlataforma() {
+        return cantidadTalleresPlataforma;
     }
 
     public EstadoProyecto getEstado() {

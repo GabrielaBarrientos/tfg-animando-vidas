@@ -43,6 +43,11 @@ Verificar:
 
 http://127.0.0.1:8000/health
 
+La consulta de talleres utiliza `GET /proyecto` con los parámetros `nombreProyecto`,
+`anioProyecto` y `nombreEmpresa`. `api-simulada/app/talleres.json` debe ser un
+arreglo JSON de talleres con `usuarioPlataforma`; ver
+`documentacion/integracion-plataforma-int-01.md`.
+
 ## 5. Iniciar backend
 
 Desde la carpeta backend, configurar la contraseña de PostgreSQL en la terminal PowerShell:
