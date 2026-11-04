@@ -1,0 +1,23 @@
+[
+  {
+    "idTaller": "av-2026-001",
+    "nombreProyecto": "Una noche en el prado",
+    "anioProyecto": 2026,
+    "nombreEmpresa": "Fundación Prosegur",
+    "usuarioPlataforma": "lara.kon",
+    "clases": [
+      {
+        "numeroClase": 1,
+        "fechaRealizacion": "2026-07-12",
+        "cantidadParticipantes": 20,
+        "cantidadEvidencias": 2
+      },
+      {
+        "numeroClase": 2,
+        "fechaRealizacion": "2026-08-15",
+        "cantidadParticipantes": 17,
+        "cantidadEvidencias": 0
+      }
+    ]
+  }
+]

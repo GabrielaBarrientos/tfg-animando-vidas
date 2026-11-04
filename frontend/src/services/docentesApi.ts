@@ -7,6 +7,13 @@ export interface Docente {
   nombres: string;
   apellidos: string;
   email: string;
+  telefono: string;
+  cargo: string;
+  grado: string;
+  materia: string;
+  cargaHoraria: number;
+  cantidadAlumnos: number;
+  usuarioPlataforma: string;
   pais: string;
   provincia: string;
   centroEducativo: string;
@@ -17,6 +24,13 @@ export interface DatosDocente {
   nombres: string;
   apellidos: string;
   email: string;
+  telefono: string;
+  cargo: string;
+  grado: string;
+  materia: string;
+  cargaHoraria: number;
+  cantidadAlumnos: number;
+  usuarioPlataforma: string;
   pais: string;
   provincia: string;
   centroEducativo: string;
@@ -56,7 +70,7 @@ export async function guardarDocente(idProyecto: number, idDocente: number | nul
   });
   await verificarSesionEnRespuesta(respuesta);
   if (respuesta.status === 409) {
-    throw new Error('Ya existe un docente con este correo electrónico en el proyecto.');
+    throw new Error('El correo o el usuario de plataforma ya están registrados en el proyecto. Revisá los valores.');
   }
   if (respuesta.status === 400) {
     throw new Error('Revisá los datos ingresados para el docente.');

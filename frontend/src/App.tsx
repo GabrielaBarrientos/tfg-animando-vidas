@@ -9,6 +9,8 @@ import SeguimientoProyectoPage from './pages/SeguimientoProyectoPage';
 import DatosGeneralesProyectoPage from './pages/DatosGeneralesProyectoPage';
 import DocentesProyectoPage from './pages/DocentesProyectoPage';
 import DetalleProyectoPage from './pages/DetalleProyectoPage';
+import TalleresProyectoPage from './pages/TalleresProyectoPage';
+import type { SolapaProyecto } from './components/ProyectoTabs';
 
 import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
 
@@ -20,7 +22,7 @@ import {
 import type { Proyecto } from './services/proyectosApi';
 
 // Pantallas disponibles en esta etapa.
-type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento' | 'docentes' | 'detalle';
+type Pantalla = 'listado' | 'alta' | 'datos-generales' | 'planificacion' | 'seguimiento' | 'docentes' | 'detalle' | 'talleres' | 'detalle-taller';
 
 function App() {
 
@@ -32,6 +34,8 @@ function App() {
 
   // Pantalla que se está mostrando.
   const [pantalla, setPantalla] = useState<Pantalla>('listado');
+  const [tallerSeleccionado, setTallerSeleccionado] = useState<string | null>(null);
+  const [solapaDetalle, setSolapaDetalle] = useState<SolapaProyecto>('resumen');
 
   // El Stepper solo pertenece al flujo de alta de un proyecto.
   // Las pantallas abiertas desde Detalle se muestran sin Stepper.
@@ -107,10 +111,26 @@ function App() {
   function mostrarDetalleProyecto(proyecto: Proyecto) {
     setEnFlujoAlta(false);
     setProyectoSeleccionado(proyecto);
+    setSolapaDetalle('resumen');
     setPantalla('detalle');
   }
 
+  function mostrarTalleresProyecto() {
+    setPantalla('talleres');
+  }
+
   function volverAlDetalle() {
+    setSolapaDetalle('resumen');
+    setPantalla('detalle');
+  }
+
+  function seleccionarSolapaDesdeTalleres(solapa: SolapaProyecto) {
+    if (solapa === 'talleres') return;
+    if (solapa === 'docentes' && usuario?.rol !== 'EXTERNO') {
+      mostrarDocentesDesdeDetalle();
+      return;
+    }
+    setSolapaDetalle(solapa);
     setPantalla('detalle');
   }
 
@@ -356,8 +376,44 @@ function App() {
           onIrADocentes={mostrarDocentesDesdeDetalle}
           onIrAPlanificacion={mostrarPlanificacionDesdeDetalle}
           onIrASeguimiento={mostrarSeguimientoDesdeDetalle}
+          onIrATalleres={mostrarTalleresProyecto}
+          solapaInicial={solapaDetalle}
           onSesionExpirada={manejarSesionExpirada}
         />
+      </AppLayout>
+    );
+  }
+
+  if (pantalla === 'talleres' && proyectoSeleccionado !== null) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <TalleresProyectoPage
+          proyecto={proyectoSeleccionado}
+          puedeActualizar={usuario.rol !== 'EXTERNO'}
+          onVolverAlListado={volverAlListado}
+          onVolverAlDetalle={volverAlDetalle}
+          onSeleccionarSolapa={seleccionarSolapaDesdeTalleres}
+          onVerTaller={function verDetalleTaller(idTaller) {
+            setTallerSeleccionado(idTaller);
+            setPantalla('detalle-taller');
+          }}
+          onSesionExpirada={manejarSesionExpirada}
+        />
+      </AppLayout>
+    );
+  }
+
+  if (pantalla === 'detalle-taller' && tallerSeleccionado !== null) {
+    return (
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+        <Box sx={{ p: 3 }}>
+          <Button variant="text" onClick={mostrarTalleresProyecto}>Volver a talleres</Button>
+          <Typography variant="h5" component="h1" sx={{ my: 2 }}>Detalle del taller</Typography>
+          <Alert severity="info">
+            Taller {tallerSeleccionado}. La consulta detallada de clases, evidencias y encuestas
+            corresponde a la Pantalla 12, prevista para un incremento posterior.
+          </Alert>
+        </Box>
       </AppLayout>
     );
   }

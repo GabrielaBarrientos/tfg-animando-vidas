@@ -10,7 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.server.ResponseStatusException;
 
-import org.tfg.backend.docente.DocenteRepository;
+import org.tfg.backend.docente.DocenteProyectoRepository;
 import org.tfg.backend.empresa.Empresa;
 import org.tfg.backend.planificacion.PlanificacionProyectoRepository;
 import org.tfg.backend.seguimiento.ConfiguracionSeguimientoRepository;
@@ -27,7 +27,7 @@ class DetalleProyectoServiceTests {
     private UsuarioRepository usuarioRepository;
     private PlanificacionProyectoRepository planificacionRepository;
     private ConfiguracionSeguimientoRepository seguimientoRepository;
-    private DocenteRepository docenteRepository;
+    private DocenteProyectoRepository docenteRepository;
     private DetalleProyectoService servicio;
     private OidcUser usuarioGoogle;
     private Proyecto proyecto;
@@ -39,7 +39,7 @@ class DetalleProyectoServiceTests {
         usuarioRepository = mock(UsuarioRepository.class);
         planificacionRepository = mock(PlanificacionProyectoRepository.class);
         seguimientoRepository = mock(ConfiguracionSeguimientoRepository.class);
-        docenteRepository = mock(DocenteRepository.class);
+        docenteRepository = mock(DocenteProyectoRepository.class);
         servicio = new DetalleProyectoService(proyectoRepository, usuarioRepository,
                 planificacionRepository, seguimientoRepository, docenteRepository);
         usuarioGoogle = mock(OidcUser.class);
