@@ -319,7 +319,7 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
             </Box>
           </Box>
 
-          <Paper variant="outlined" sx={{ px: 1, py: 2, mb: 2 }}>
+          <Box sx={{ mb: 2 }}>
             {/* Padding superior: evita que la etiqueta flotante de Estado quede recortada. */}
             <Box sx={{ overflowX: 'auto', pt: 1.5, pb: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: '32px',
@@ -363,7 +363,7 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
                   onClick={actualizar}>{actualizando ? 'Actualizando...' : 'Actualizar talleres'}</Button>}
               </Box>
             </Box>
-          </Paper>
+          </Box>
 
           <Paper variant="outlined" sx={{ overflow: 'hidden' }}>
             {cargando ? <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>

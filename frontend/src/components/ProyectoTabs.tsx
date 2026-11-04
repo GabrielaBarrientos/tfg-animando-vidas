@@ -1,7 +1,7 @@
 import type { SyntheticEvent } from 'react';
 import { Tab, Tabs } from '@mui/material';
 
-export type SolapaProyecto = 'resumen' | 'docentes' | 'preguntas' | 'talleres'
+export type SolapaProyecto = 'resumen' | 'preguntas' | 'talleres'
   | 'evidencias' | 'encuestas' | 'avance';
 
 interface ProyectoTabsProps {
@@ -20,7 +20,6 @@ export default function ProyectoTabs({ valor, onCambiar }: ProyectoTabsProps) {
       aria-label="Secciones del proyecto"
       sx={{ borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
       <Tab value="resumen" label="Resumen" />
-      <Tab value="docentes" label="Docentes" />
       <Tab value="preguntas" label="Preguntas" />
       <Tab value="talleres" label="Talleres" />
       <Tab value="evidencias" label="Evidencias" />

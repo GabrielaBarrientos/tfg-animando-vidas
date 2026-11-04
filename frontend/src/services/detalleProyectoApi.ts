@@ -25,6 +25,9 @@ export interface DetalleProyecto {
   planificacion: PlanificacionResumen | null;
   seguimiento: SeguimientoResumen | null;
   cantidadDocentes: number;
+  cantidadAlumnos: number;
+  cantidadEscuelas: number;
+  cantidadPaises: number;
 }
 
 export async function obtenerDetalleProyecto(idProyecto: number): Promise<DetalleProyecto> {

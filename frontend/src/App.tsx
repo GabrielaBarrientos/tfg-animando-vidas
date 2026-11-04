@@ -126,10 +126,6 @@ function App() {
 
   function seleccionarSolapaDesdeTalleres(solapa: SolapaProyecto) {
     if (solapa === 'talleres') return;
-    if (solapa === 'docentes' && usuario?.rol !== 'EXTERNO') {
-      mostrarDocentesDesdeDetalle();
-      return;
-    }
     setSolapaDetalle(solapa);
     setPantalla('detalle');
   }

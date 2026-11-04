@@ -609,7 +609,7 @@ function SeguimientoProyectoPage({
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
               <Button variant="text" type="button" disabled={guardando}
                 onClick={enFlujoAlta ? irAProyectos : irAlDetalle}>
-                {enFlujoAlta ? 'Ir a proyectos' : 'Volver al detalle'}
+                {enFlujoAlta ? 'Ir a proyectos' : 'VOLVER'}
               </Button>
               <Button variant="contained" type="submit" disabled={guardando || responsables.length === 0}>
                 {guardando ? 'Guardando...' : 'Guardar configuración'}
