@@ -16,6 +16,7 @@ import org.tfg.backend.planificacion.PlanificacionProyecto;
 import org.tfg.backend.planificacion.PlanificacionProyectoRepository;
 import org.tfg.backend.proyecto.Proyecto;
 import org.tfg.backend.proyecto.ProyectoRepository;
+import org.tfg.backend.seguimiento.ConfiguracionSeguimiento;
 import org.tfg.backend.seguimiento.ConfiguracionSeguimientoRepository;
 import org.tfg.backend.usuario.RolUsuario;
 import org.tfg.backend.usuario.Usuario;
@@ -32,6 +33,7 @@ class TallerServiceTests {
     private TallerRepository talleres;
     private ClaseTallerRepository clases;
     private PlanificacionProyectoRepository planes;
+    private ConfiguracionSeguimientoRepository seguimientos;
     private EducationalPlatformClient plataforma;
     private OidcUser google;
     private Usuario usuario;
@@ -45,9 +47,10 @@ class TallerServiceTests {
         talleres = mock(TallerRepository.class);
         clases = mock(ClaseTallerRepository.class);
         planes = mock(PlanificacionProyectoRepository.class);
+        seguimientos = mock(ConfiguracionSeguimientoRepository.class);
         plataforma = mock(EducationalPlatformClient.class);
         servicio = new TallerService(proyectos, usuarios, asociaciones, talleres, clases, planes,
-                mock(ConfiguracionSeguimientoRepository.class), plataforma, new TallerSeguimientoCalculador());
+                seguimientos, plataforma, new TallerSeguimientoCalculador());
         google = mock(OidcUser.class);
         usuario = mock(Usuario.class);
         proyecto = mock(Proyecto.class);
@@ -78,6 +81,26 @@ class TallerServiceTests {
         } catch (AccessDeniedException esperado) {
             assertNotNull(esperado.getMessage());
         }
+    }
+
+    @Test
+    void listarTalleresSoloConsultaPostgresqlSinAccederALaPlataforma() {
+        planificar();
+        ConfiguracionSeguimiento configuracion = mock(ConfiguracionSeguimiento.class);
+        when(seguimientos.findByProyecto_IdProyecto(1L)).thenReturn(Optional.of(configuracion));
+        when(talleres.findByAsignacion_Proyecto_IdProyectoOrderByIdTallerPlataformaAsc(1L))
+                .thenReturn(List.of());
+
+        assertTrue(servicio.listar(1L, google).isEmpty());
+        verify(talleres).findByAsignacion_Proyecto_IdProyectoOrderByIdTallerPlataformaAsc(1L);
+        verifyNoInteractions(plataforma);
+    }
+
+    @Test
+    void consultarMetadatosNoSincronizaLaPlataforma() {
+        when(proyecto.getEstado()).thenReturn(org.tfg.backend.proyecto.EstadoProyecto.PLANIFICADO);
+        servicio.obtenerMetadatos(1L, google);
+        verifyNoInteractions(plataforma);
     }
 
     @Test
