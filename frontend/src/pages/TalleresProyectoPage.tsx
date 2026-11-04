@@ -12,7 +12,8 @@ import ProyectoTabs, { type SolapaProyecto } from '../components/ProyectoTabs';
 import type { Proyecto } from '../services/proyectosApi';
 import { SesionExpiradaError } from '../services/erroresApi';
 import {
-  listarTalleres, sincronizarTalleres, eliminarCopiaLocalTaller, obtenerMetadatosTalleres,
+  listarTalleres, sincronizarTalleres, esperarSincronizacionEnCurso,
+  eliminarCopiaLocalTaller, obtenerMetadatosTalleres,
   type TallerResumen, type TalleresMetadatos, type EstadoTaller, type EstadoEvidencias
 } from '../services/talleresApi';
 import { colores } from '../theme';
@@ -140,21 +141,22 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
   const [notificacion, setNotificacion] = useState<Notificacion | null>(null);
   const [bajaSeleccionada, setBajaSeleccionada] = useState<TallerResumen | null>(null);
 
-  // La primera consulta conserva la sincronización automática de los perfiles internos.
-  useEffect(function cargarTalleresAlIngresar() {
+  // La Pantalla 7 inicia la sincronización automática. Aquí solo se consulta
+  // PostgreSQL. Si el usuario navega antes de que termine la sincronización,
+  // esperamos su resultado para no mostrar una copia local desactualizada.
+  useEffect(function consultarTalleresAlIngresar() {
     let activo = true;
     async function cargar() {
       let advertencia = '';
-      if (puedeActualizar) {
-        try {
-          await sincronizarTalleres(proyecto.idProyecto);
-        } catch (excepcion) {
-          if (excepcion instanceof SesionExpiradaError) {
-            onSesionExpirada();
-            return;
-          }
-          advertencia = excepcion instanceof Error ? excepcion.message : 'Falló la sincronización automática.';
+      try {
+        await esperarSincronizacionEnCurso(proyecto.idProyecto);
+      } catch (excepcion) {
+        if (excepcion instanceof SesionExpiradaError) {
+          if (activo) onSesionExpirada();
+          return;
         }
+        advertencia = excepcion instanceof Error
+          ? excepcion.message : 'Falló la sincronización automática.';
       }
       try {
         const datos = await listarTalleres(proyecto.idProyecto);
@@ -168,7 +170,8 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
       } catch (excepcion) {
         if (!activo) return;
         if (excepcion instanceof SesionExpiradaError) onSesionExpirada();
-        else setNotificacion({ tipo: 'error', texto: excepcion instanceof Error ? excepcion.message : 'Error al consultar talleres.' });
+        else setNotificacion({ tipo: 'error', texto: excepcion instanceof Error
+          ? excepcion.message : 'Error al consultar talleres.' });
       } finally {
         if (activo) setCargando(false);
       }
