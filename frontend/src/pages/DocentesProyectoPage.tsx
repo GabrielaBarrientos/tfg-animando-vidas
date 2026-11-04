@@ -54,7 +54,7 @@ function validarFormulario(datos: DatosDocente): string {
   }
   if (!Number.isInteger(datos.cargaHoraria) || datos.cargaHoraria <= 0
       || !Number.isInteger(datos.cantidadAlumnos) || datos.cantidadAlumnos <= 0) {
-    return 'Carga horaria y cantidad de alumnos deben ser enteros mayores que cero.';
+    return 'Carga horaria y alcance alumnos deben ser enteros mayores que cero.';
   }
   if (!formatoUsuarioValido(datos.usuarioPlataforma)) {
     return 'El usuario debe tener mínimo 8 caracteres, solo letras minúsculas y al menos un punto.';
@@ -387,15 +387,21 @@ function DocentesProyectoPage({
           </Alert>
         )}
         {!cargando && errorCarga === '' && (
-          <TableContainer>
-            <Table size="small" aria-label="Docentes del proyecto">
+          <TableContainer sx={{ width: '100%', overflowX: 'auto' }}>
+            <Table size="small" aria-label="Docentes del proyecto" sx={{ minWidth: 2100 }}>
               <TableHead>
                 <TableRow>
                   <TableCell>País</TableCell>
                   <TableCell>Centro educativo</TableCell>
                   <TableCell>Provincia/Región/Departamento</TableCell>
                   <TableCell>Nombres y apellidos</TableCell>
+                  <TableCell>Cargo</TableCell>
+                  <TableCell>Celular</TableCell>
                   <TableCell>Correo electrónico</TableCell>
+                  <TableCell>Grado</TableCell>
+                  <TableCell align="right">Alcance alumnos</TableCell>
+                  <TableCell>Materia</TableCell>
+                  <TableCell align="right">Carga horaria</TableCell>
                   <TableCell>Usuario de plataforma</TableCell>
                   {puedeGestionar && <TableCell align="right">Acciones</TableCell>}
                 </TableRow>
@@ -408,7 +414,13 @@ function DocentesProyectoPage({
                       <TableCell>{docente.centroEducativo}</TableCell>
                       <TableCell>{docente.provincia}</TableCell>
                       <TableCell>{docente.nombres} {docente.apellidos}</TableCell>
+                      <TableCell>{docente.cargo}</TableCell>
+                      <TableCell>{docente.telefono}</TableCell>
                       <TableCell>{docente.email}</TableCell>
+                      <TableCell>{docente.grado}</TableCell>
+                      <TableCell align="right">{docente.cantidadAlumnos}</TableCell>
+                      <TableCell>{docente.materia}</TableCell>
+                      <TableCell align="right">{docente.cargaHoraria}</TableCell>
                       <TableCell>{docente.usuarioPlataforma}</TableCell>
                       {puedeGestionar && (
                         <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
@@ -426,7 +438,7 @@ function DocentesProyectoPage({
                   );
                 })}
                 {docentesFiltrados.length === 0 && (
-                  <TableRow><TableCell colSpan={puedeGestionar ? 7 : 6}>
+                  <TableRow><TableCell colSpan={puedeGestionar ? 13 : 12}>
                     {docentes.length === 0 ? 'El proyecto no tiene docentes registrados.'
                       : 'No se encontraron docentes con los filtros seleccionados.'}
                   </TableCell></TableRow>
@@ -436,8 +448,8 @@ function DocentesProyectoPage({
           </TableContainer>
         )}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-          <Button variant="outlined" onClick={enFlujoAlta ? onVolverAlListado : onVolverAlDetalle}>
-            {enFlujoAlta ? 'Volver a proyectos' : 'Volver al detalle'}
+          <Button variant="text" onClick={enFlujoAlta ? onVolverAlListado : onVolverAlDetalle}>
+            {enFlujoAlta ? 'Volver a proyectos' : 'VOLVER'}
           </Button>
           {puedeGestionar && enFlujoAlta && (
             <Button variant="contained" onClick={finalizar} disabled={cargando || errorCarga !== '' || procesando}>
@@ -453,35 +465,35 @@ function DocentesProyectoPage({
           <DialogContent sx={{ display: 'grid',
             gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'repeat(2, minmax(0, 1fr))' },
             gap: 4, '&&': { pt: 2 } }}>
-            <TextField label="Nombres *" value={formulario.nombres} fullWidth size="small"
+            <TextField label="Nombres" required value={formulario.nombres} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('nombres', e.target.value); }} />
-            <TextField label="Apellidos *" value={formulario.apellidos} fullWidth size="small"
+            <TextField label="Apellidos" required value={formulario.apellidos} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('apellidos', e.target.value); }} />
-            <TextField label="Correo electrónico *" value={formulario.email} fullWidth size="small"
+            <TextField label="Correo electrónico" required value={formulario.email} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('email', e.target.value); }} />
-            <TextField label="País *" value={formulario.pais} fullWidth size="small"
+            <TextField label="País" required value={formulario.pais} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('pais', e.target.value); }} />
             <TextField label="Provincia/Región/Departamento" placeholder="Provincia/Región/Departamento"
               required value={formulario.provincia} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('provincia', e.target.value); }} />
-            <TextField label="Centro educativo *" value={formulario.centroEducativo} fullWidth size="small"
+            <TextField label="Centro educativo" required value={formulario.centroEducativo} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('centroEducativo', e.target.value); }} />
-            <TextField label="Teléfono *" value={formulario.telefono} fullWidth size="small"
+            <TextField label="Celular" required value={formulario.telefono} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('telefono', e.target.value); }} />
-            <TextField label="Cargo *" value={formulario.cargo} fullWidth size="small"
+            <TextField label="Cargo" required value={formulario.cargo} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('cargo', e.target.value); }} />
-            <TextField label="Grado *" value={formulario.grado} fullWidth size="small"
+            <TextField label="Grado" required value={formulario.grado} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('grado', e.target.value); }} />
-            <TextField label="Materia *" value={formulario.materia} fullWidth size="small"
+            <TextField label="Materia" required value={formulario.materia} fullWidth size="small"
               onChange={function cambiar(e) { cambiarCampo('materia', e.target.value); }} />
-            <TextField label="Carga horaria (horas cátedra) *" type="number" value={formulario.cargaHoraria || ''}
+            <TextField label="Carga horaria (horas cátedra)" required type="number" value={formulario.cargaHoraria || ''}
               fullWidth size="small" slotProps={{ htmlInput: { min: 1, step: 1 } }}
               onChange={function cambiar(e) { cambiarEntero('cargaHoraria', e.target.value); }} />
-            <TextField label="Cantidad de alumnos *" type="number" value={formulario.cantidadAlumnos || ''}
+            <TextField label="Alcance alumnos" required type="number" value={formulario.cantidadAlumnos || ''}
               fullWidth size="small" slotProps={{ htmlInput: { min: 1, step: 1 } }}
               onChange={function cambiar(e) { cambiarEntero('cantidadAlumnos', e.target.value); }} />
             <Box sx={{ display: 'flex', gridColumn: '1 / -1', alignItems: 'start', gap: 1 }}>
-              <TextField label="Usuario de plataforma *" value={formulario.usuarioPlataforma} fullWidth size="small"
+              <TextField label="Usuario de plataforma" required value={formulario.usuarioPlataforma} fullWidth size="small"
                 helperText="Mínimo 8 caracteres; letras y puntos, sin números. Siempre editable."
                 onChange={function cambiar(e) { cambiarCampo('usuarioPlataforma', e.target.value); }} />
               <Button variant="outlined" type="button" onClick={regenerarUsuario}>Generar</Button>

@@ -8,7 +8,10 @@ public record DetalleProyectoResponse(
         OffsetDateTime ultimaActualizacion,
         PlanificacionResumen planificacion,
         SeguimientoResumen seguimiento,
-        long cantidadDocentes) {
+        long cantidadDocentes,
+        long cantidadAlumnos,
+        long cantidadEscuelas,
+        long cantidadPaises) {
 
     public record PlanificacionResumen(
             LocalDate fechaInicio,

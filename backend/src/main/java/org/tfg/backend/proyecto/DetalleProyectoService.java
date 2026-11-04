@@ -87,9 +87,13 @@ public class DetalleProyectoService {
         }
 
         long cantidadDocentes = docenteRepository.countByProyecto_IdProyecto(idProyecto);
+        long cantidadAlumnos = docenteRepository.sumarAlumnosPorProyecto(idProyecto);
+        long cantidadEscuelas = docenteRepository.contarEscuelasDistintasPorProyecto(idProyecto);
+        long cantidadPaises = docenteRepository.contarPaisesDistintosPorProyecto(idProyecto);
         return new DetalleProyectoResponse(
                 new ProyectoResponse(proyecto), proyecto.getFechaActualizacion(),
-                planificacion, seguimiento, cantidadDocentes);
+                planificacion, seguimiento, cantidadDocentes,
+                cantidadAlumnos, cantidadEscuelas, cantidadPaises);
     }
 
     private void verificarAcceso(Proyecto proyecto, OidcUser usuarioGoogle) {

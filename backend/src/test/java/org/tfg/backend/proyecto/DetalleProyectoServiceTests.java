@@ -63,13 +63,31 @@ class DetalleProyectoServiceTests {
     void administradorConsultaDetalleConDatosNoDisponibles() {
         when(usuario.getRol()).thenReturn(RolUsuario.ADMINISTRADOR);
         when(docenteRepository.countByProyecto_IdProyecto(1L)).thenReturn(4L);
+        when(docenteRepository.sumarAlumnosPorProyecto(1L)).thenReturn(141L);
+        when(docenteRepository.contarEscuelasDistintasPorProyecto(1L)).thenReturn(3L);
+        when(docenteRepository.contarPaisesDistintosPorProyecto(1L)).thenReturn(2L);
 
         DetalleProyectoResponse detalle = servicio.obtener(1L, usuarioGoogle);
 
         assertEquals(1L, detalle.proyecto().getIdProyecto());
         assertEquals(4L, detalle.cantidadDocentes());
+        assertEquals(141L, detalle.cantidadAlumnos());
+        assertEquals(3L, detalle.cantidadEscuelas());
+        assertEquals(2L, detalle.cantidadPaises());
         assertNull(detalle.planificacion());
         assertNull(detalle.seguimiento());
+    }
+
+    @Test
+    void proyectoSinDocentesTieneIndicadoresEnCero() {
+        when(usuario.getRol()).thenReturn(RolUsuario.ADMINISTRADOR);
+
+        DetalleProyectoResponse detalle = servicio.obtener(1L, usuarioGoogle);
+
+        assertEquals(0L, detalle.cantidadDocentes());
+        assertEquals(0L, detalle.cantidadAlumnos());
+        assertEquals(0L, detalle.cantidadEscuelas());
+        assertEquals(0L, detalle.cantidadPaises());
     }
 
     @Test

@@ -76,6 +76,33 @@ class DocenteServiceTests {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
+    void indicadoresDelProyectoSumanAlumnosYEliminanDuplicadosEnEscuelasYPaises() {
+        Proyecto proyecto = crearProyecto();
+        Long id = proyecto.getIdProyecto();
+        servicio.crear(id, datos("docente1@example.org", "maria.perez"));
+        servicio.crear(id, new DocenteRequest("Sofía", "Gómez", "docente2@example.org", "+54 2222",
+                "Argentina", "Córdoba", "Escuela 1", "Docente", "Primero", "Lengua",
+                8, 20, "sofia.gomez"));
+        servicio.crear(id, new DocenteRequest("Lucía", "Silva", "docente3@example.org", "+598 3333",
+                "Uruguay", "Montevideo", "Escuela 2", "Docente", "Segundo", "Arte",
+                10, 15, "lucia.silva"));
+
+        assertEquals(3L, asociaciones.countByProyecto_IdProyecto(id));
+        assertEquals(60L, asociaciones.sumarAlumnosPorProyecto(id));
+        assertEquals(2L, asociaciones.contarEscuelasDistintasPorProyecto(id));
+        assertEquals(2L, asociaciones.contarPaisesDistintosPorProyecto(id));
+
+        Proyecto otroProyecto = crearProyecto();
+        servicio.crear(otroProyecto.getIdProyecto(), datos("docente4@example.org", "maria.perez"));
+        assertEquals(60L, asociaciones.sumarAlumnosPorProyecto(id));
+        assertEquals(2L, asociaciones.contarEscuelasDistintasPorProyecto(id));
+        assertEquals(2L, asociaciones.contarPaisesDistintosPorProyecto(id));
+        assertEquals(25L, asociaciones.sumarAlumnosPorProyecto(otroProyecto.getIdProyecto()));
+        assertEquals(1L, asociaciones.contarEscuelasDistintasPorProyecto(otroProyecto.getIdProyecto()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
     void mismoDocenteEnDosProyectosConMismoUsuario() {
         Proyecto proyectoUno = crearProyecto();
         Proyecto proyectoDos = crearProyecto();

@@ -797,7 +797,7 @@ function calcularMaximoClases(
                 onClick={enFlujoAlta ? solicitarVolverAProyectos : solicitarVolverAlDetalle}
                 sx={{ minWidth: 140, height: 36 }}
               >
-                {enFlujoAlta ? 'Ir a proyectos' : 'Volver al detalle'}
+                {enFlujoAlta ? 'Ir a proyectos' : 'VOLVER'}
               </Button>
 
               <Button

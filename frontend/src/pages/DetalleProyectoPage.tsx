@@ -8,7 +8,10 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { obtenerDetalleProyecto, type DetalleProyecto } from '../services/detalleProyectoApi';
 import { SesionExpiradaError } from '../services/erroresApi';
-import { listarTalleres, sincronizarTalleres, type TallerResumen } from '../services/talleresApi';
+import {
+  listarTalleres, sincronizarTalleres, obtenerMetadatosTalleres,
+  type TallerResumen, type TalleresMetadatos
+} from '../services/talleresApi';
 import type { Proyecto } from '../services/proyectosApi';
 import { colores } from '../theme';
 import ProyectoTabs, { type SolapaProyecto } from '../components/ProyectoTabs';
@@ -40,6 +43,22 @@ function mostrarFecha(fecha: string | null | undefined): string {
   const partes = fechaSimple.split('-');
   if (partes.length !== 3) return fechaSimple;
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+/** La fecha de sincronización se muestra con el mismo criterio que la Pantalla 8. */
+function mostrarFechaSincronizacion(fecha: string | null | undefined): string {
+  if (!fecha) return 'Sin sincronizar';
+  const instante = new Date(fecha);
+  if (Number.isNaN(instante.getTime())) return 'Sin sincronizar';
+
+  const partes = new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(instante);
+  const valores: Record<string, string> = {};
+  for (const parte of partes) valores[parte.type] = parte.value;
+  return `${valores.day}-${valores.month}-${valores.year} ${valores.hour}:${valores.minute}:${valores.second}`;
 }
 
 function mostrarFrecuencia(valor: string): string {
@@ -98,6 +117,29 @@ function Panel({ titulo, children, accion }: PanelProps) {
   );
 }
 
+interface FilaTallerProps {
+  etiqueta: string;
+  valor: number | string;
+}
+
+/** Una métrica por fila y un divisor, conforme a la tarjeta Talleres de Figma. */
+function FilaTaller({ etiqueta, valor }: FilaTallerProps) {
+  return (
+    <Box sx={{
+      minHeight: 55, px: 1.5, py: 1,
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      gap: 2, borderBottom: '1px solid', borderColor: 'divider'
+    }}>
+      <Typography variant="body2" sx={{ color: colores.textoPrimario, fontSize: 16 }}>
+        {etiqueta}
+      </Typography>
+      <Typography variant="body2" sx={{ color: colores.textoPrimario, fontSize: 16, flexShrink: 0 }}>
+        {valor}
+      </Typography>
+    </Box>
+  );
+}
+
 function DetalleProyectoPage({
   proyecto, rol, onVolverAlListado, onIrADocentes,
   onIrAPlanificacion, onIrASeguimiento, onIrATalleres, onSesionExpirada, solapaInicial = 'resumen'
@@ -107,6 +149,7 @@ function DetalleProyectoPage({
   const [error, setError] = useState('');
   const [advertenciaTalleres, setAdvertenciaTalleres] = useState('');
   const [talleresResumen, setTalleresResumen] = useState<TallerResumen[] | null>(null);
+  const [metadatosTalleres, setMetadatosTalleres] = useState<TalleresMetadatos | null>(null);
   const [versionConsulta, setVersionConsulta] = useState(0);
   const [solapa, setSolapa] = useState<SolapaProyecto>(solapaInicial);
 
@@ -160,6 +203,8 @@ function DetalleProyectoPage({
       try {
         const lista = await listarTalleres(proyecto.idProyecto);
         if (activo) setTalleresResumen(lista);
+        const metadatos = await obtenerMetadatosTalleres(proyecto.idProyecto);
+        if (activo) setMetadatosTalleres(metadatos);
       } catch (excepcion) {
         if (excepcion instanceof SesionExpiradaError) {
           onSesionExpirada();
@@ -188,10 +233,6 @@ function DetalleProyectoPage({
   }
 
   function cambiarSolapa(valor: SolapaProyecto) {
-    if (valor === 'docentes' && rol !== 'EXTERNO') {
-      onIrADocentes();
-      return;
-    }
     if (valor === 'talleres') {
       onIrATalleres();
       return;
@@ -201,14 +242,18 @@ function DetalleProyectoPage({
 
   const datosProyecto = detalle?.proyecto ?? proyecto;
   const puedeEditar = rol === 'ADMINISTRADOR';
+  let talleresEnPlazo = 0;
   let talleresAtrasados = 0;
   let proximosAtraso = 0;
-  let evidenciasPendientes = 0;
+  let talleresNoIniciados = 0;
   if (talleresResumen !== null) {
     for (const taller of talleresResumen) {
+      // Al igual que en la Pantalla 8, las bajas pendientes no cuentan como vigentes.
+      if (taller.pendienteBaja) continue;
+      if (taller.estado === 'EN_PLAZO') talleresEnPlazo++;
       if (taller.estado === 'ATRASADO') talleresAtrasados++;
       if (taller.estado === 'PROXIMO_ATRASO') proximosAtraso++;
-      if (taller.evidencias === 'PENDIENTES') evidenciasPendientes++;
+      if (taller.avanceReal === 0) talleresNoIniciados++;
     }
   }
 
@@ -247,37 +292,79 @@ function DetalleProyectoPage({
           {cargando && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
           {error !== '' && <Alert severity="error" action={<Button onClick={reintentar}>Reintentar</Button>}>{error}</Alert>}
           {!cargando && error === '' && detalle !== null && solapa === 'resumen' && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', lg: '1.4fr 0.70fr' }, gap: 3 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Panel titulo="Datos generales">
-                  <Box sx={{
-                    display: 'grid',
-                    gridTemplateColumns: {
-                      xs: '1fr',
-                      sm: 'repeat(2, minmax(0, 1fr))',
-                      lg: '1.45fr 0.9fr 0.9fr 0.9fr'
-                    },
-                    gap: 3
-                  }}>
-                    {/* Fila 1: datos del proyecto y participantes. */}
-                    <Dato titulo="Nombre del proyecto" valor={datosProyecto.nombre} />
-                    <Dato titulo="Año" valor={datosProyecto.anio} />
-                    <Dato titulo="Cantidad de docentes" valor={detalle.cantidadDocentes} />
-                    <Dato titulo="Cantidad de alumnos" valor="Sin datos" />
-
-                    {/* Fila 2: empresa, actualización e instituciones. */}
-                    <Dato titulo="Empresa" valor={datosProyecto.nombreEmpresa} />
-                    <Dato titulo="Última actualización" valor={mostrarFecha(detalle.ultimaActualizacion)} />
-                    <Dato titulo="Cantidad de escuelas" valor="Sin datos" />
-                    <Dato titulo="Cantidad de países" valor="Sin datos" />
-
-                    {/* Fila 3: descripción, a todo el ancho. */}
-                    <Box sx={{ gridColumn: '1 / -1' }}>
-                      <Dato titulo="Descripción" valor={datosProyecto.descripcion || 'Sin descripción'} />
+            <Box sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: 'minmax(0, 1fr)', lg: 'minmax(0, 1.4fr) minmax(0, 1fr)' },
+              gap: 3,
+              alignItems: 'stretch'
+            }}>
+              {/* Las dos tarjetas de la primera fila comparten altura sin valores fijos. */}
+              <Box sx={{ minWidth: 0, order: 1,
+                '& > .MuiPaper-root': { height: '100%', boxSizing: 'border-box' } }}>
+                <Paper variant="outlined" sx={{ borderRadius: 1, minWidth: 0, overflow: 'hidden' }}>
+                  <Box sx={{ p: 3 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      gap: 2, flexWrap: 'wrap', mb: '12px' }}>
+                      <Typography component="h2" variant="h6" sx={{ fontWeight: 500 }}>
+                        Datos generales y docentes
+                      </Typography>
+                      {rol !== 'EXTERNO' && (
+                        <Button variant="text" color="primary" onClick={onIrADocentes}
+                          sx={{ whiteSpace: 'nowrap' }}>
+                          VER DOCENTES
+                        </Button>
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                      columnGap: 3, rowGap: 3 }}>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                        gap: 3, minWidth: 0 }}>
+                        <Dato titulo="Nombre del proyecto" valor={datosProyecto.nombre} />
+                        <Dato titulo="Año" valor={datosProyecto.anio} />
+                        <Dato titulo="Empresa financiadora" valor={datosProyecto.nombreEmpresa} />
+                        <Dato titulo="Última actualización" valor={mostrarFecha(detalle.ultimaActualizacion)} />
+                      </Box>
+                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                        gap: 3, minWidth: 0 }}>
+                        <Dato titulo="Cantidad de docentes" valor={detalle.cantidadDocentes} />
+                        <Dato titulo="Cantidad de alumnos" valor={detalle.cantidadAlumnos} />
+                        <Dato titulo="Cantidad de escuelas" valor={detalle.cantidadEscuelas} />
+                        <Dato titulo="Cantidad de países" valor={detalle.cantidadPaises} />
+                      </Box>
                     </Box>
                   </Box>
-                </Panel>
+                  <Box sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider' }}>
+                    <Typography variant="body2" sx={{ color: colores.textoSecundario,
+                      overflowWrap: 'anywhere' }}>
+                      Descripción del proyecto: {datosProyecto.descripcion?.trim() || 'Sin descripción registrada.'}
+                    </Typography>
+                  </Box>
+                </Paper>
+              </Box>
+              <Box sx={{ minWidth: 0, order: { xs: 3, lg: 2 },
+                '& > .MuiPaper-root': { height: '100%', boxSizing: 'border-box' } }}>
+                <Panel titulo="Planificación"
+                  accion={puedeEditar ? <Button variant="text" onClick={onIrAPlanificacion}>Modificar</Button> : undefined}>
+                  {detalle.planificacion === null ? (
+                    <Typography color="text.secondary">Planificación pendiente.</Typography>
+                  ) : (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
+                      {/* Fila 1: fechas planificadas. */}
+                      <Dato titulo="Fecha de comienzo" valor={mostrarFecha(detalle.planificacion.fechaInicio)} />
+                      <Dato titulo="Fecha de finalización" valor={mostrarFecha(detalle.planificacion.fechaFinalizacion)} />
 
+                      {/* Fila 2: duración y cantidad de clases. */}
+                      <Dato titulo="Cantidad de meses" valor={detalle.planificacion.duracionMeses} />
+                      <Dato titulo="Cantidad de clases" valor={detalle.planificacion.cantidadClases} />
+
+                      {/* Fila 3: frecuencia de clases. */}
+                      <Dato titulo="Frecuencia de clases" valor={mostrarFrecuencia(detalle.planificacion.frecuenciaClases)} />
+                    </Box>
+                  )}
+                </Panel>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3,
+                minWidth: 0, order: { xs: 2, lg: 3 } }}>
                 <Panel titulo="Parámetros y notificaciones"
                   accion={puedeEditar ? <Button variant="text" onClick={onIrASeguimiento}>Modificar</Button> : undefined}>
                   {detalle.seguimiento === null ? (
@@ -311,28 +398,8 @@ function DetalleProyectoPage({
                   </Typography>
                 </Panel>
               </Box>
-
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <Panel titulo="Planificación"
-                  accion={puedeEditar ? <Button variant="text" onClick={onIrAPlanificacion}>Modificar</Button> : undefined}>
-                  {detalle.planificacion === null ? (
-                    <Typography color="text.secondary">Planificación pendiente.</Typography>
-                  ) : (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 3 }}>
-                      {/* Fila 1: fechas planificadas. */}
-                      <Dato titulo="Fecha de comienzo" valor={mostrarFecha(detalle.planificacion.fechaInicio)} />
-                      <Dato titulo="Fecha de finalización" valor={mostrarFecha(detalle.planificacion.fechaFinalizacion)} />
-
-                      {/* Fila 2: duración y cantidad de clases. */}
-                      <Dato titulo="Cantidad de meses" valor={detalle.planificacion.duracionMeses} />
-                      <Dato titulo="Cantidad de clases" valor={detalle.planificacion.cantidadClases} />
-
-                      {/* Fila 3: frecuencia de clases. */}
-                      <Dato titulo="Frecuencia de clases" valor={mostrarFrecuencia(detalle.planificacion.frecuenciaClases)} />
-                    </Box>
-                  )}
-                </Panel>
-
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3,
+                minWidth: 0, order: 4 }}>
                 <Panel titulo="Talleres"
                   accion={<Button variant="text" onClick={abrirTalleres}>Ver talleres</Button>}>
                   {advertenciaTalleres !== '' && <Alert severity="warning" sx={{ mb: 2 }}>
@@ -343,22 +410,29 @@ function DetalleProyectoPage({
                       Sin datos de talleres disponibles para el proyecto.
                     </Typography>
                   ) : (
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 2 }}>
-                      <Dato titulo="Talleres" valor={talleresResumen.length} />
-                      <Dato titulo="Atrasados" valor={talleresAtrasados} />
-                      <Dato titulo="Próximos a atraso" valor={proximosAtraso} />
-                      <Dato titulo="Evidencias pendientes" valor={evidenciasPendientes} />
+                    <Box>
+                      <FilaTaller etiqueta="Total de talleres en la plataforma"
+                        valor={metadatosTalleres?.cantidadTalleresPlataforma ?? '—'} />
+                      <FilaTaller etiqueta="Talleres en plazo" valor={talleresEnPlazo} />
+                      <FilaTaller etiqueta="Talleres próximos a atraso" valor={proximosAtraso} />
+                      <FilaTaller etiqueta="Talleres atrasados" valor={talleresAtrasados} />
+                      <FilaTaller etiqueta="Talleres no iniciados" valor={talleresNoIniciados} />
+                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap',
+                        px: 1.5, pt: 1.5, pb: 0.5 }}>
+                        <Typography sx={{ fontSize: 14, color: colores.textoSecundario }}>
+                          Última sincronización
+                        </Typography>
+                        <Typography sx={{ fontSize: 14, color: colores.textoSecundario }}>
+                          {mostrarFechaSincronizacion(metadatosTalleres?.ultimaSincronizacion)}
+                        </Typography>
+                      </Box>
                     </Box>
                   )}
                 </Panel>
               </Box>
             </Box>
           )}
-          {!cargando && error === '' && detalle !== null && solapa === 'docentes' && rol === 'EXTERNO' && (
-            <Alert severity="info">La consulta individual de docentes no está habilitada para usuarios externos.</Alert>
-          )}
-          {!cargando && error === '' && detalle !== null && solapa !== 'resumen' &&
-            solapa !== 'docentes' && (
+          {!cargando && error === '' && detalle !== null && solapa !== 'resumen' && (
               <Alert severity="info">
                 {solapa === 'preguntas' ? 'La sincronización de preguntas y su configuración estarán disponibles en un incremento posterior.'
                   : solapa === 'talleres' ? 'La consulta de talleres requiere la integración con la plataforma educativa.'
