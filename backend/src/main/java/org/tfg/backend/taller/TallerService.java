@@ -1,6 +1,8 @@
 package org.tfg.backend.taller;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,7 +91,7 @@ public class TallerService {
         if (idTaller == null || idTaller.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El taller es obligatorio");
         }
-        Optional<Taller> encontrado = tallerRepository.findById(idTaller);
+        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
         if (encontrado.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado");
         }
@@ -131,7 +133,7 @@ public class TallerService {
                 estado = DetalleTallerResponse.EstadoClase.REALIZADA;
             }
             clases.add(new DetalleTallerResponse.ClaseDetalle(
-                    numero, claseGuardada == null ? null : claseGuardada.getNombreClase(),
+                    claseGuardada == null ? null : claseGuardada.getIdClaseTaller(), numero, claseGuardada == null ? null : claseGuardada.getNombreClase(),
                     claseGuardada == null ? null : claseGuardada.getNombreModulo(),
                     fechaPrevista, fechaRealizacion, participantes, cantidadEvidencias, estado));
         }
@@ -184,12 +186,40 @@ public class TallerService {
         if (remotos == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuesta vacía de plataforma");
         Set<String> identificadores = new HashSet<>();
         Set<Long> docentesEnLote = new HashSet<>();
+        Set<Long> identificadoresClasesEnLote = new HashSet<>();
         for (PlatformTallerResponse remoto : remotos) {
-            validarRemoto(remoto, proyecto, porUsuario, identificadores, docentesEnLote, plan.get().getCantidadClases());
-            Optional<Taller> existente = tallerRepository.findById(remoto.idTaller());
+            validarRemoto(remoto, proyecto, porUsuario, identificadores, docentesEnLote,
+                    identificadoresClasesEnLote, plan.get().getCantidadClases());
+            Optional<Taller> existente = tallerRepository.findByIdTallerPlataforma(remoto.idTaller());
             if (existente.isPresent() && !existente.get().getAsignacion().getProyecto().getIdProyecto().equals(idProyecto)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "El identificador del taller ya pertenece a otro proyecto");
+            }
+            // Validar todas las identidades antes de modificar cualquier clase del lote.
+            Map<Integer, ClaseTaller> clasesLocalesPorNumero = new HashMap<>();
+            if (existente.isPresent()) {
+                List<ClaseTaller> clasesLocales = claseRepository
+                        .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(remoto.idTaller());
+                for (ClaseTaller claseLocal : clasesLocales) {
+                    clasesLocalesPorNumero.put(claseLocal.getNumeroClase(), claseLocal);
+                }
+            }
+            for (PlatformTallerResponse.ClasePlataforma dato : remoto.clases()) {
+                Optional<ClaseTaller> porIdExterno = claseRepository.findByIdClasePlataforma(dato.idClasePlataforma());
+                if (porIdExterno.isPresent()) {
+                    ClaseTaller claseExistente = porIdExterno.get();
+                    if (!remoto.idTaller().equals(claseExistente.getTaller().getIdTallerPlataforma())
+                            || !dato.numeroClase().equals(claseExistente.getNumeroClase())) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                                "El identificador de clase ya pertenece a otra clase o taller");
+                    }
+                }
+                ClaseTaller clasePorNumero = clasesLocalesPorNumero.get(dato.numeroClase());
+                if (clasePorNumero != null && clasePorNumero.getIdClasePlataforma() != null
+                        && !clasePorNumero.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "La clase local ya tiene otro identificador externo");
+                }
             }
         }
         List<Taller> locales = tallerRepository.findByAsignacion_Proyecto_IdProyectoOrderByIdTallerPlataformaAsc(idProyecto);
@@ -204,6 +234,7 @@ public class TallerService {
                 localPorDocente.put(local.getAsignacion().getDocente().getIdDocente(), local);
             }
         }
+        OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
         for (PlatformTallerResponse remoto : remotos) {
             DocenteProyecto docente = porUsuario.get(remoto.usuarioPlataforma().trim().toLowerCase(Locale.ROOT));
             Taller anteriorDocente = localPorDocente.get(docente.getDocente().getIdDocente());
@@ -212,7 +243,7 @@ public class TallerService {
                 // La interfaz muestra el anterior marcado pendiente y permite eliminar su copia.
                 continue;
             }
-            Optional<Taller> encontrado = tallerRepository.findById(remoto.idTaller());
+            Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(remoto.idTaller());
             Taller taller;
             if (encontrado.isPresent()) {
                 taller = encontrado.get();
@@ -229,10 +260,16 @@ public class TallerService {
                 ClaseTaller clase = porNumero.get(dato.numeroClase());
                 if (clase == null) {
                     clase = new ClaseTaller(taller, dato.numeroClase(), dato.fechaRealizacion(),
-                            dato.cantidadParticipantes(), dato.cantidadEvidencias());
+                            dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
                 } else {
-                    clase.actualizar(dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias());
+                    if (clase.getIdClasePlataforma() != null
+                            && !clase.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                                "La clase local ya tiene otro identificador externo");
+                    }
+                    clase.actualizar(dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
                 }
+                clase.asignarIdentificadorExterno(dato.idClasePlataforma());
                 claseRepository.save(clase);
             }
             // Clases ausentes del lote: no conservar valores obsoletos.
@@ -240,7 +277,7 @@ public class TallerService {
                 // GET /proyecto puede omitir clases pendientes que sí figuran en GET /taller.
                 // Conservar sus nombres y módulos sincronizados previamente.
                 if (!numerosRecibidos.contains(anterior.getNumeroClase())
-                        && (anterior.getNombreClase() == null || anterior.getFechaRealizacion() != null)) {
+                        && anterior.getIdClasePlataforma() == null) {
                     claseRepository.delete(anterior);
                 }
             }
@@ -260,7 +297,7 @@ public class TallerService {
         if (idTaller == null || idTaller.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El taller es obligatorio");
         }
-        Optional<Taller> encontrado = tallerRepository.findById(idTaller);
+        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
         if (encontrado.isEmpty() || !idProyecto.equals(
                 encontrado.get().getAsignacion().getProyecto().getIdProyecto())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado en el proyecto");
@@ -296,12 +333,30 @@ public class TallerService {
         }
         // Validar la respuesta completa antes de realizar cualquier cambio en PostgreSQL.
         Set<Integer> numerosRecibidos = new HashSet<>();
+        Set<Long> idsClases = new HashSet<>();
         for (PlatformDetalleTallerResponse.ClaseDetallePlataforma clase : remoto.clases()) {
+            if (clase == null || clase.idClasePlataforma() == null || !idsClases.add(clase.idClasePlataforma())) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "Identificador de clase inválido o repetido");
+            }
             validarDetalleClase(clase, plan.get().getCantidadClases(),
                     taller.getAsignacion().getCantidadAlumnos(), numerosRecibidos);
         }
         List<ClaseTaller> anteriores = claseRepository
                 .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller);
+        // La identidad externa es global: nunca puede corresponder a otro taller o número.
+        for (PlatformDetalleTallerResponse.ClaseDetallePlataforma dato : remoto.clases()) {
+            Optional<ClaseTaller> porIdExterno = claseRepository.findByIdClasePlataforma(dato.idClasePlataforma());
+            if (porIdExterno.isPresent()) {
+                ClaseTaller local = porIdExterno.get();
+                if (!local.getTaller().getIdTallerPlataforma().equals(idTaller)
+                        || !local.getNumeroClase().equals(dato.numeroClase())) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "El identificador externo de clase corresponde a otra clase");
+                }
+            }
+        }
+        OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
         Map<Integer, ClaseTaller> porNumero = new HashMap<>();
         for (ClaseTaller clase : anteriores) {
             porNumero.put(clase.getNumeroClase(), clase);
@@ -311,26 +366,28 @@ public class TallerService {
             if (clase == null) {
                 int evidencias = dato.cantidadEvidencias() == null ? 0 : dato.cantidadEvidencias();
                 clase = new ClaseTaller(taller, dato.numeroClase(), dato.fechaRealizacion(),
-                        dato.cantidadParticipantes(), evidencias);
+                        dato.cantidadParticipantes(), evidencias, instante);
             }
             EstadoClaseTaller estado = EstadoClaseTaller.PENDIENTE;
             if ("Realizada".equals(dato.estadoClase())) estado = EstadoClaseTaller.REALIZADA;
+            if (clase.getIdClasePlataforma() != null && !clase.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "El número de clase ya tiene otro identificador externo");
+            }
+            clase.asignarIdentificadorExterno(dato.idClasePlataforma());
             clase.actualizarDetalle(dato.nombreClase(), dato.nombreModulo(), estado,
-                    dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias());
+                    dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
             claseRepository.save(clase);
         }
-        for (ClaseTaller anterior : anteriores) {
-            if (!numerosRecibidos.contains(anterior.getNumeroClase())) {
-                claseRepository.delete(anterior);
-            }
-        }
+        // GET /taller no debe borrar clases que ya podrían tener evidencias asociadas.
         taller.registrarSincronizacionClases();
         return remoto.clases().size();
     }
 
     private void validarDetalleClase(PlatformDetalleTallerResponse.ClaseDetallePlataforma clase,
             int cantidadClases, int cantidadAlumnos, Set<Integer> numerosRecibidos) {
-        if (clase == null || clase.numeroClase() == null || clase.numeroClase() < 1
+        if (clase == null || clase.idClasePlataforma() == null || clase.idClasePlataforma() <= 0
+                || clase.numeroClase() == null || clase.numeroClase() < 1
                 || clase.numeroClase() > cantidadClases || !numerosRecibidos.add(clase.numeroClase())
                 || clase.nombreClase() == null || clase.nombreClase().isBlank()
                 || clase.nombreClase().length() > 500
@@ -360,7 +417,7 @@ public class TallerService {
 
     private void validarRemoto(PlatformTallerResponse remoto, Proyecto proyecto,
             Map<String, DocenteProyecto> docentes, Set<String> ids,
-            Set<Long> docentesEnLote, int cantidadClases) {
+            Set<Long> docentesEnLote, Set<Long> idsClasesEnLote, int cantidadClases) {
         if (remoto == null || remoto.idTaller() == null || remoto.idTaller().isBlank()
                 || remoto.idTaller().length() > 150 || !ids.add(remoto.idTaller())) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
@@ -389,7 +446,9 @@ public class TallerService {
         }
         Set<Integer> numeros = new HashSet<>();
         for (PlatformTallerResponse.ClasePlataforma clase : remoto.clases()) {
-            if (clase == null || clase.numeroClase() == null || clase.numeroClase() < 1
+            if (clase == null || clase.idClasePlataforma() == null || clase.idClasePlataforma() <= 0
+                    || !idsClasesEnLote.add(clase.idClasePlataforma())
+                    || clase.numeroClase() == null || clase.numeroClase() < 1
                     || clase.numeroClase() > cantidadClases || !numeros.add(clase.numeroClase())
                     || clase.cantidadEvidencias() == null || clase.cantidadEvidencias() < 0
                     || (clase.fechaRealizacion() == null && (clase.cantidadEvidencias() > 0
@@ -407,7 +466,7 @@ public class TallerService {
     public void eliminarCopiaLocal(Long idProyecto, String idTaller, OidcUser usuarioGoogle) {
         Proyecto proyecto = buscarProyecto(idProyecto);
         verificarAcceso(proyecto, usuarioGoogle);
-        Optional<Taller> encontrado = tallerRepository.findById(idTaller);
+        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
         if (encontrado.isEmpty() || !encontrado.get().getAsignacion().getProyecto().getIdProyecto().equals(idProyecto)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado en el proyecto");
         }
@@ -421,6 +480,22 @@ public class TallerService {
         tallerRepository.delete(taller);
         tallerRepository.flush();
         proyecto.actualizarEstadoPorTalleres(tallerRepository.existsByAsignacion_Proyecto_IdProyecto(idProyecto));
+    }
+
+    /** Garantiza los permisos institucionales y la pertenencia del taller al proyecto. */
+    @Transactional(readOnly = true)
+    public Taller buscarTallerAutorizado(Long idProyecto, String idTaller, OidcUser usuarioGoogle) {
+        Proyecto proyecto = buscarProyecto(idProyecto);
+        verificarAcceso(proyecto, usuarioGoogle);
+        if (idTaller == null || idTaller.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Taller obligatorio");
+        }
+        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
+        if (encontrado.isEmpty() || !idProyecto.equals(
+                encontrado.get().getAsignacion().getProyecto().getIdProyecto())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado en el proyecto");
+        }
+        return encontrado.get();
     }
 
     private Proyecto buscarProyecto(Long idProyecto) {

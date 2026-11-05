@@ -12,6 +12,7 @@ def detalle_valido():
         "id_taller": 8,
         "clases": [
             {
+                "idClasePlataforma": 7,
                 "numeroClase": 1,
                 "nombreClase": "ENCUENTRO 1 - EL ARCA DE NOE",
                 "nombreModulo": "INTRODUCCIÓN AL DIBUJO",
@@ -21,6 +22,7 @@ def detalle_valido():
                 "cantidadEvidencias": 0,
             },
             {
+                "idClasePlataforma": 8,
                 "numeroClase": 2,
                 "nombreClase": "ENCUENTRO 2 - APRENDER COMO RUBENS",
                 "nombreModulo": "INTRODUCCIÓN AL DIBUJO",

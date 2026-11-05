@@ -77,7 +77,7 @@ class DetalleTallerServiceTests {
         taller = mock(Taller.class);
         when(taller.getAsignacion()).thenReturn(asignacion);
         when(taller.getIdTallerPlataforma()).thenReturn("t-20");
-        when(talleres.findById("t-20")).thenReturn(Optional.of(taller));
+        when(talleres.findByIdTallerPlataforma("t-20")).thenReturn(Optional.of(taller));
 
         PlanificacionProyecto planificacion = mock(PlanificacionProyecto.class);
         when(planificacion.getFechaInicio()).thenReturn(LocalDate.of(2026, 7, 1));
@@ -163,14 +163,14 @@ class DetalleTallerServiceTests {
 
     @Test
     void sincronizarClasesConsultaUnicamenteElTallerSeleccionado() {
-        when(talleres.findById("8")).thenReturn(Optional.of(taller));
+        when(talleres.findByIdTallerPlataforma("8")).thenReturn(Optional.of(taller));
         when(taller.getIdTallerPlataforma()).thenReturn("8");
         when(plataforma.obtenerDetalleTaller(8)).thenReturn(new PlatformDetalleTallerResponse(8,
                 List.of(
-                        new PlatformDetalleTallerResponse.ClaseDetallePlataforma(1,
+                        new PlatformDetalleTallerResponse.ClaseDetallePlataforma(101L, 1,
                                 "ENCUENTRO 1", "INTRODUCCIÓN AL DIBUJO", "Realizada",
                                 LocalDate.of(2026, 5, 15), 9, 0),
-                        new PlatformDetalleTallerResponse.ClaseDetallePlataforma(2,
+                        new PlatformDetalleTallerResponse.ClaseDetallePlataforma(102L, 2,
                                 "ENCUENTRO 2", "INTRODUCCIÓN AL DIBUJO", "Pendiente",
                                 null, null, null))));
         when(clases.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc("8"))
@@ -188,7 +188,7 @@ class DetalleTallerServiceTests {
 
     @Test
     void rechazaUnDetalleQueCorrespondeAOtroTaller() {
-        when(talleres.findById("8")).thenReturn(Optional.of(taller));
+        when(talleres.findByIdTallerPlataforma("8")).thenReturn(Optional.of(taller));
         when(plataforma.obtenerDetalleTaller(8))
                 .thenReturn(new PlatformDetalleTallerResponse(9, List.of()));
         try {
@@ -203,10 +203,10 @@ class DetalleTallerServiceTests {
 
     @Test
     void claseInvalidaNoModificaLosDatosLocales() {
-        when(talleres.findById("8")).thenReturn(Optional.of(taller));
+        when(talleres.findByIdTallerPlataforma("8")).thenReturn(Optional.of(taller));
         when(plataforma.obtenerDetalleTaller(8)).thenReturn(new PlatformDetalleTallerResponse(8,
                 List.of(new PlatformDetalleTallerResponse.ClaseDetallePlataforma(
-                        1, "ENCUENTRO 1", "MÓDULO", "Pendiente",
+                        101L, 1, "ENCUENTRO 1", "MÓDULO", "Pendiente",
                         LocalDate.of(2026, 5, 15), 9, 0))));
         try {
             servicio.sincronizarClases(20L, "8", google);
@@ -222,7 +222,7 @@ class DetalleTallerServiceTests {
     void soloPermiteSincronizarClasesDeTalleresDelProyecto() {
         Proyecto otro = mock(Proyecto.class);
         when(otro.getIdProyecto()).thenReturn(999L);
-        when(talleres.findById("8")).thenReturn(Optional.of(taller));
+        when(talleres.findByIdTallerPlataforma("8")).thenReturn(Optional.of(taller));
         when(taller.getAsignacion().getProyecto()).thenReturn(otro);
         try {
             servicio.sincronizarClases(20L, "8", google);

@@ -6,6 +6,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
@@ -16,7 +18,10 @@ import org.tfg.backend.docente.DocenteProyecto;
 @Table(name = "taller")
 public class Taller {
     @Id
-    @Column(name = "id_taller_plataforma", length = 150)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_taller")
+    private Long idTaller;
+    @Column(name = "id_taller_plataforma", nullable = false, unique = true, length = 150)
     private String idTallerPlataforma;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -34,6 +39,9 @@ public class Taller {
     @Column(name = "ultima_sincronizacion_clases")
     private OffsetDateTime ultimaSincronizacionClases;
 
+    @Column(name = "ultima_sincronizacion_evidencias")
+    private OffsetDateTime ultimaSincronizacionEvidencias;
+
     protected Taller() { }
     public Taller(String identificador, DocenteProyecto asignacion) {
         idTallerPlataforma = identificador;
@@ -48,6 +56,11 @@ public class Taller {
     public void registrarSincronizacionClases() {
         ultimaSincronizacionClases = OffsetDateTime.now(ZoneOffset.UTC);
     }
+    public void registrarSincronizacionEvidencias(OffsetDateTime instante) {
+        ultimaSincronizacionEvidencias = instante;
+    }
+    public OffsetDateTime getUltimaSincronizacionEvidencias() { return ultimaSincronizacionEvidencias; }
+    public Long getIdTaller() { return idTaller; }
     public String getIdTallerPlataforma() { return idTallerPlataforma; }
     public DocenteProyecto getAsignacion() { return asignacion; }
     public boolean isPendienteBaja() { return pendienteBaja; }
