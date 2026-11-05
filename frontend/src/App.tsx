@@ -10,6 +10,7 @@ import DatosGeneralesProyectoPage from './pages/DatosGeneralesProyectoPage';
 import DocentesProyectoPage from './pages/DocentesProyectoPage';
 import DetalleProyectoPage from './pages/DetalleProyectoPage';
 import TalleresProyectoPage from './pages/TalleresProyectoPage';
+import DetalleTallerPage from './pages/DetalleTallerPage';
 import type { SolapaProyecto } from './components/ProyectoTabs';
 
 import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
@@ -117,6 +118,11 @@ function App() {
 
   function mostrarTalleresProyecto() {
     setPantalla('talleres');
+  }
+
+  function mostrarDetalleTaller(idTaller: string): void {
+    setTallerSeleccionado(idTaller);
+    setPantalla('detalle-taller');
   }
 
   function volverAlDetalle() {
@@ -389,27 +395,25 @@ function App() {
           onVolverAlListado={volverAlListado}
           onVolverAlDetalle={volverAlDetalle}
           onSeleccionarSolapa={seleccionarSolapaDesdeTalleres}
-          onVerTaller={function verDetalleTaller(idTaller) {
-            setTallerSeleccionado(idTaller);
-            setPantalla('detalle-taller');
-          }}
+          onVerTaller={mostrarDetalleTaller}
           onSesionExpirada={manejarSesionExpirada}
         />
       </AppLayout>
     );
   }
 
-  if (pantalla === 'detalle-taller' && tallerSeleccionado !== null) {
+  if (pantalla === 'detalle-taller' && tallerSeleccionado !== null && proyectoSeleccionado !== null) {
     return (
       <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
-        <Box sx={{ p: 3 }}>
-          <Button variant="text" onClick={mostrarTalleresProyecto}>Volver a talleres</Button>
-          <Typography variant="h5" component="h1" sx={{ my: 2 }}>Detalle del taller</Typography>
-          <Alert severity="info">
-            Taller {tallerSeleccionado}. La consulta detallada de clases, evidencias y encuestas
-            corresponde a la Pantalla 12, prevista para un incremento posterior.
-          </Alert>
-        </Box>
+        <DetalleTallerPage
+          proyecto={proyectoSeleccionado}
+          idTaller={tallerSeleccionado}
+          puedeActualizar={usuario.rol !== 'EXTERNO'}
+          onVolverAProyectos={volverAlListado}
+          onVolverAProyecto={volverAlDetalle}
+          onVolverATalleres={mostrarTalleresProyecto}
+          onSesionExpirada={manejarSesionExpirada}
+        />
       </AppLayout>
     );
   }

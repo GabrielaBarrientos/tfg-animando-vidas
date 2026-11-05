@@ -42,6 +42,17 @@ public class EducationalPlatformClient {
         return Arrays.asList(datos);
     }
 
+    public PlatformDetalleTallerResponse obtenerDetalleTaller(int idTallerPlataforma) {
+        PlatformDetalleTallerResponse detalle = restClient.get()
+                .uri("/taller?id_taller_plataforma={idTallerPlataforma}", idTallerPlataforma)
+                .retrieve()
+                .body(PlatformDetalleTallerResponse.class);
+        if (detalle == null) {
+            throw new IllegalStateException("La plataforma no devolvió el detalle del taller");
+        }
+        return detalle;
+    }
+
     public record PlatformHealthResponse(
             String status,
             String service

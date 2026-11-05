@@ -6,6 +6,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -28,6 +30,14 @@ public class ClaseTaller {
     @Column(name = "cantidad_evidencias", nullable = false)
     private Integer cantidadEvidencias;
 
+    @Column(name = "nombre_clase", length = 500)
+    private String nombreClase;
+    @Column(name = "nombre_modulo", length = 500)
+    private String nombreModulo;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_clase", nullable = false, length = 20)
+    private EstadoClaseTaller estadoClase;
+
     protected ClaseTaller() { }
     public ClaseTaller(Taller taller, int numeroClase, LocalDate fechaRealizacion,
             Integer cantidadParticipantes, int cantidadEvidencias) {
@@ -39,10 +49,23 @@ public class ClaseTaller {
         this.fechaRealizacion = fechaRealizacion;
         this.cantidadParticipantes = cantidadParticipantes;
         this.cantidadEvidencias = cantidadEvidencias;
+        this.estadoClase = fechaRealizacion == null ? EstadoClaseTaller.PENDIENTE : EstadoClaseTaller.REALIZADA;
+    }
+    public void actualizarDetalle(String nombreClase, String nombreModulo, EstadoClaseTaller estado,
+            LocalDate fechaRealizacion, Integer participantes, Integer evidencias) {
+        this.nombreClase = nombreClase;
+        this.nombreModulo = nombreModulo;
+        this.estadoClase = estado;
+        this.fechaRealizacion = fechaRealizacion;
+        this.cantidadParticipantes = participantes;
+        this.cantidadEvidencias = evidencias == null ? 0 : evidencias;
     }
     public Taller getTaller() { return taller; }
     public Integer getNumeroClase() { return numeroClase; }
     public LocalDate getFechaRealizacion() { return fechaRealizacion; }
     public Integer getCantidadParticipantes() { return cantidadParticipantes; }
     public Integer getCantidadEvidencias() { return cantidadEvidencias; }
+    public String getNombreClase() { return nombreClase; }
+    public String getNombreModulo() { return nombreModulo; }
+    public EstadoClaseTaller getEstadoClase() { return estadoClase; }
 }

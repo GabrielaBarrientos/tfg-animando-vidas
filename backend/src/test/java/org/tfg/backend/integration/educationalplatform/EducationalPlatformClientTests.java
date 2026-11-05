@@ -73,6 +73,36 @@ class EducationalPlatformClientTests {
     }
 
     @Test
+    void obtieneClasesDeUnTallerPorIdDePlataforma() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer servidor = MockRestServiceServer.bindTo(builder).build();
+        EducationalPlatformClient cliente = new EducationalPlatformClient(builder, "http://127.0.0.1:8000");
+        servidor.expect(requestTo("http://127.0.0.1:8000/taller?id_taller_plataforma=8"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {
+                          "id_taller": 8,
+                          "clases": [{
+                            "numeroClase": 10,
+                            "nombreClase": "ENCUENTRO 12 - GALERIA DE VIRTUDES",
+                            "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN",
+                            "estadoClase": "Pendiente",
+                            "fechaRealizacion": null,
+                            "cantidadParticipantes": null,
+                            "cantidadEvidencias": null
+                          }]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        PlatformDetalleTallerResponse detalle = cliente.obtenerDetalleTaller(8);
+        assertEquals(8, detalle.idTaller().intValue());
+        assertEquals(10, detalle.clases().get(0).numeroClase().intValue());
+        assertEquals("Pendiente", detalle.clases().get(0).estadoClase());
+        org.junit.jupiter.api.Assertions.assertNull(detalle.clases().get(0).cantidadEvidencias());
+        servidor.verify();
+    }
+
+    @Test
     void shouldRetrievePlatformHealth() {
 
         RestClient.Builder builder = RestClient.builder();
