@@ -8,7 +8,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-05-15",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 0
+      "cantidadEvidencias": 0,
+      "idClasePlataforma": 7
     },
     {
       "numeroClase": 2,
@@ -17,7 +18,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-05-26",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 3
+      "cantidadEvidencias": 3,
+      "idClasePlataforma": 8
     },
     {
       "numeroClase": 3,
@@ -26,7 +28,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-05-26",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 3
+      "cantidadEvidencias": 3,
+      "idClasePlataforma": 9
     },
     {
       "numeroClase": 4,
@@ -35,7 +38,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-06-09",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 2
+      "cantidadEvidencias": 2,
+      "idClasePlataforma": 10
     },
     {
       "numeroClase": 5,
@@ -44,7 +48,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-06-23",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 2
+      "cantidadEvidencias": 2,
+      "idClasePlataforma": 11
     },
     {
       "numeroClase": 6,
@@ -53,7 +58,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-07-14",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 3
+      "cantidadEvidencias": 3,
+      "idClasePlataforma": 12
     },
     {
       "numeroClase": 7,
@@ -62,7 +68,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-10-06",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 3
+      "cantidadEvidencias": 3,
+      "idClasePlataforma": 13
     },
     {
       "numeroClase": 8,
@@ -71,7 +78,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-10-13",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 3
+      "cantidadEvidencias": 3,
+      "idClasePlataforma": 14
     },
     {
       "numeroClase": 9,
@@ -80,7 +88,8 @@
       "estadoClase": "Realizada",
       "fechaRealizacion": "2026-10-29",
       "cantidadParticipantes": 9,
-      "cantidadEvidencias": 0
+      "cantidadEvidencias": 0,
+      "idClasePlataforma": 15
     },
     {
       "numeroClase": 10,
@@ -89,7 +98,8 @@
       "estadoClase": "Pendiente",
       "fechaRealizacion": null,
       "cantidadParticipantes": null,
-      "cantidadEvidencias": null
+      "cantidadEvidencias": null,
+      "idClasePlataforma": 16
     }
   ]
 }

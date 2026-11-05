@@ -5,6 +5,7 @@ import type { EstadoEvidencias, EstadoTaller } from './talleresApi';
 export type EstadoClase = 'REALIZADA' | 'PENDIENTE';
 
 export interface ClaseDetalle {
+  idClaseTaller: number | null;
   numeroClase: number;
   nombreClase: string | null;
   nombreModulo: string | null;

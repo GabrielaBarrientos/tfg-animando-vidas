@@ -11,6 +11,6 @@ public record PlatformTallerResponse(
         String nombreEmpresa,
         String usuarioPlataforma,
         List<ClasePlataforma> clases) {
-    public record ClasePlataforma(Integer numeroClase, LocalDate fechaRealizacion,
-            Integer cantidadParticipantes, Integer cantidadEvidencias) { }
+    public record ClasePlataforma(Long idClasePlataforma, Integer numeroClase,
+            LocalDate fechaRealizacion, Integer cantidadParticipantes, Integer cantidadEvidencias) { }
 }

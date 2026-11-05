@@ -13,6 +13,7 @@ public record PlatformDetalleTallerResponse(
     }
 
     public record ClaseDetallePlataforma(
+            Long idClasePlataforma,
             Integer numeroClase,
             String nombreClase,
             String nombreModulo,

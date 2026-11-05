@@ -26,6 +26,7 @@ public record DetalleTallerResponse(
         List<ClaseDetalle> clases) {
 
     public record ClaseDetalle(
+            Long idClaseTaller,
             int numeroClase,
             String nombreClase,
             String nombreModulo,

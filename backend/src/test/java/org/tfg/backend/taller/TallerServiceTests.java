@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,6 +46,7 @@ class TallerServiceTests {
         usuarios = mock(UsuarioRepository.class);
         asociaciones = mock(DocenteProyectoRepository.class);
         talleres = mock(TallerRepository.class);
+        when(talleres.save(any(Taller.class))).thenAnswer(org.mockito.AdditionalAnswers.returnsFirstArg());
         clases = mock(ClaseTallerRepository.class);
         planes = mock(PlanificacionProyectoRepository.class);
         seguimientos = mock(ConfiguracionSeguimientoRepository.class);
@@ -147,11 +149,14 @@ class TallerServiceTests {
         when(plataforma.obtenerTalleres("Una noche en el prado", (short) 2026, "Fundación Prosegur")).thenReturn(List.of(
                 new PlatformTallerResponse("t1", "Una noche en el prado", (short) 2026,
                         "Fundación Prosegur", "maria.perez", List.of(
-                        new PlatformTallerResponse.ClasePlataforma(1,
+                        new PlatformTallerResponse.ClasePlataforma(7L, 1,
                                 java.time.LocalDate.of(2026, 8, 1), 20, 1)))));
         assertEquals(1, servicio.sincronizar(1L, google));
         verify(talleres).save(any(Taller.class));
-        verify(clases).save(any(ClaseTaller.class));
+        ArgumentCaptor<ClaseTaller> claseGuardada = ArgumentCaptor.forClass(ClaseTaller.class);
+        verify(clases).save(claseGuardada.capture());
+        assertEquals(7L, claseGuardada.getValue().getIdClasePlataforma());
+        assertEquals(1, claseGuardada.getValue().getNumeroClase());
         verify(proyecto).registrarSincronizacionTalleres(1);
         verify(proyecto).actualizarEstadoPorTalleres(true);
     }
@@ -197,7 +202,7 @@ class TallerServiceTests {
         when(plataforma.obtenerTalleres("Una noche en el prado", (short) 2026, "Fundación Prosegur")).thenReturn(List.of(
                 new PlatformTallerResponse("t1", "Una noche en el prado", (short) 2026,
                         "Fundación Prosegur", "maria.perez", List.of(
-                        new PlatformTallerResponse.ClasePlataforma(1,
+                        new PlatformTallerResponse.ClasePlataforma(7L, 1,
                                 java.time.LocalDate.of(2026, 8, 1), 26, 1)))));
         try {
             servicio.sincronizar(1L, google);
@@ -207,6 +212,81 @@ class TallerServiceTests {
         }
         verify(talleres, never()).save(any(Taller.class));
         verify(proyecto, never()).registrarSincronizacionTalleres(anyInt());
+    }
+
+    @Test
+    void rechazaClaseSinIdExternoAntesDeGuardar() {
+        planificar();
+        registrarDocenteParaValidacion();
+        when(plataforma.obtenerTalleres("Una noche en el prado", (short) 2026, "Fundación Prosegur"))
+                .thenReturn(List.of(new PlatformTallerResponse("t1", "Una noche en el prado", (short) 2026,
+                        "Fundación Prosegur", "maria.perez", List.of(
+                        new PlatformTallerResponse.ClasePlataforma(null, 1,
+                                java.time.LocalDate.of(2026, 8, 1), 20, 1)))));
+        try {
+            servicio.sincronizar(1L, google);
+            fail("La clase debe rechazarse antes de guardar datos");
+        } catch (ResponseStatusException error) {
+            assertEquals(502, error.getStatusCode().value());
+        }
+        verify(talleres, never()).save(any(Taller.class));
+        verify(clases, never()).save(any(ClaseTaller.class));
+    }
+
+    @Test
+    void rechazaIdentificadoresDeClaseRepetidosAntesDeGuardar() {
+        planificar();
+        registrarDocenteParaValidacion();
+        when(plataforma.obtenerTalleres("Una noche en el prado", (short) 2026, "Fundación Prosegur"))
+                .thenReturn(List.of(new PlatformTallerResponse("t1", "Una noche en el prado", (short) 2026,
+                        "Fundación Prosegur", "maria.perez", List.of(
+                        new PlatformTallerResponse.ClasePlataforma(7L, 1,
+                                java.time.LocalDate.of(2026, 8, 1), 20, 1),
+                        new PlatformTallerResponse.ClasePlataforma(7L, 2,
+                                java.time.LocalDate.of(2026, 8, 2), 20, 1)))));
+        try {
+            servicio.sincronizar(1L, google);
+            fail("La clase debe rechazarse antes de guardar datos");
+        } catch (ResponseStatusException error) {
+            assertEquals(502, error.getStatusCode().value());
+        }
+        verify(talleres, never()).save(any(Taller.class));
+        verify(clases, never()).save(any(ClaseTaller.class));
+    }
+
+    @Test
+    void rechazaIdExternoYaAsociadoAOtraClase() {
+        planificar();
+        registrarDocenteParaValidacion();
+        ClaseTaller anterior = mock(ClaseTaller.class);
+        Taller otroTaller = mock(Taller.class);
+        when(otroTaller.getIdTallerPlataforma()).thenReturn("t-otro");
+        when(anterior.getTaller()).thenReturn(otroTaller);
+        when(clases.findByIdClasePlataforma(7L)).thenReturn(Optional.of(anterior));
+        when(plataforma.obtenerTalleres("Una noche en el prado", (short) 2026, "Fundación Prosegur"))
+                .thenReturn(List.of(new PlatformTallerResponse("t1", "Una noche en el prado", (short) 2026,
+                        "Fundación Prosegur", "maria.perez", List.of(
+                        new PlatformTallerResponse.ClasePlataforma(7L, 1,
+                                java.time.LocalDate.of(2026, 8, 1), 20, 1)))));
+        try {
+            servicio.sincronizar(1L, google);
+            fail("No se puede asociar un identificador a otra clase");
+        } catch (ResponseStatusException error) {
+            assertEquals(409, error.getStatusCode().value());
+        }
+        verify(talleres, never()).save(any(Taller.class));
+        verify(clases, never()).save(any(ClaseTaller.class));
+    }
+
+    private void registrarDocenteParaValidacion() {
+        DocenteProyecto asociacion = mock(DocenteProyecto.class);
+        org.tfg.backend.docente.Docente docente = mock(org.tfg.backend.docente.Docente.class);
+        when(asociacion.getUsuarioPlataforma()).thenReturn("maria.perez");
+        when(asociacion.getDocente()).thenReturn(docente);
+        when(docente.getIdDocente()).thenReturn(10L);
+        when(asociacion.getCantidadAlumnos()).thenReturn(25);
+        when(asociaciones.findByProyecto_IdProyectoOrderByDocente_ApellidosAscDocente_NombresAsc(1L))
+                .thenReturn(List.of(asociacion));
     }
 
     @Test
@@ -225,7 +305,7 @@ class TallerServiceTests {
     void eliminarUltimoTallerDevuelveElProyectoAPlanificado() {
         Taller anterior = mock(Taller.class);
         DocenteProyecto asignacion = mock(DocenteProyecto.class);
-        when(talleres.findById("t1")).thenReturn(Optional.of(anterior));
+        when(talleres.findByIdTallerPlataforma("t1")).thenReturn(Optional.of(anterior));
         when(anterior.getAsignacion()).thenReturn(asignacion);
         when(asignacion.getProyecto()).thenReturn(proyecto);
         when(anterior.isPendienteBaja()).thenReturn(true);
@@ -239,7 +319,7 @@ class TallerServiceTests {
     void noPermiteEliminarCopiaSinBajaPendiente() {
         Taller anterior = mock(Taller.class);
         DocenteProyecto asignacion = mock(DocenteProyecto.class);
-        when(talleres.findById("t1")).thenReturn(Optional.of(anterior));
+        when(talleres.findByIdTallerPlataforma("t1")).thenReturn(Optional.of(anterior));
         when(anterior.getAsignacion()).thenReturn(asignacion);
         when(asignacion.getProyecto()).thenReturn(proyecto);
         when(anterior.isPendienteBaja()).thenReturn(false);

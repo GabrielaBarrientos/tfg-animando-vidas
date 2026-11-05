@@ -4,57 +4,66 @@
     "nombreProyecto": "Una noche en el prado",
     "anioProyecto": 2026,
     "nombreEmpresa": "Fundación Prosegur",
-    "usuarioPlataforma": "lara.kon",
+    "usuarioPlataforma": "ji.opazo",
     "clases": [
       {
+        "idClasePlataforma": 7,
         "numeroClase": 1,
         "fechaRealizacion": "2026-05-15",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 0
       },
       {
+        "idClasePlataforma": 8,
         "numeroClase": 2,
         "fechaRealizacion": "2026-05-26",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3
       },
       {
+        "idClasePlataforma": 9,
         "numeroClase": 3,
         "fechaRealizacion": "2026-05-26",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3
       },
       {
+        "idClasePlataforma": 10,
         "numeroClase": 4,
         "fechaRealizacion": "2026-06-09",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 2
       },
       {
+        "idClasePlataforma": 11,
         "numeroClase": 5,
         "fechaRealizacion": "2026-06-23",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 2
       },
       {
+        "idClasePlataforma": 12,
         "numeroClase": 6,
         "fechaRealizacion": "2026-07-14",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3
       },
       {
+        "idClasePlataforma": 13,
         "numeroClase": 7,
         "fechaRealizacion": "2026-10-06",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3
       },
       {
+        "idClasePlataforma": 14,
         "numeroClase": 8,
         "fechaRealizacion": "2026-10-13",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3
       },
       {
+        "idClasePlataforma": 15,
         "numeroClase": 9,
         "fechaRealizacion": "2026-10-29",
         "cantidadParticipantes": 9,

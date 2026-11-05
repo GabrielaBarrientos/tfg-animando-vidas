@@ -2,7 +2,8 @@ import json
 from datetime import date
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi.responses import FileResponse
 from enum import Enum
 
 from pydantic import BaseModel, Field, model_validator
@@ -10,9 +11,12 @@ from pydantic import BaseModel, Field, model_validator
 app = FastAPI(title="API simulada - Animando Vidas")
 DATOS = Path(__file__).parent / "talleres.json"
 DETALLES = Path(__file__).parent / "detalle_talleres.json"
+EVIDENCIAS = Path(__file__).parent / "evidencias.json"
+ARCHIVOS = Path(__file__).parent / "archivos"
 
 
 class ClasePlataforma(BaseModel):
+    idClasePlataforma: int = Field(ge=1)
     numeroClase: int = Field(ge=1)
     fechaRealizacion: date | None = None
     cantidadParticipantes: int | None = Field(default=None, ge=0)
@@ -54,13 +58,23 @@ def obtener_talleres(
             raise ValueError("Los datos simulados deben contener una lista de talleres")
 
         coincidencias = []
+        identificadores_clases = set()
         for dato in datos:
             if not isinstance(dato, dict):
                 raise ValueError("Cada taller debe ser un objeto")
             if (dato.get("nombreProyecto") == nombreProyecto
                     and dato.get("anioProyecto") == anioProyecto
                     and dato.get("nombreEmpresa") == nombreEmpresa):
-                coincidencias.append(TallerPlataforma.model_validate(dato))
+                taller = TallerPlataforma.model_validate(dato)
+                numeros_clase = set()
+                for clase in taller.clases:
+                    if clase.idClasePlataforma in identificadores_clases:
+                        raise ValueError("Identificador externo de clase repetido en el proyecto")
+                    if clase.numeroClase in numeros_clase:
+                        raise ValueError("Número de clase repetido en un taller")
+                    identificadores_clases.add(clase.idClasePlataforma)
+                    numeros_clase.add(clase.numeroClase)
+                coincidencias.append(taller)
         return coincidencias
     except (OSError, ValueError) as error:
         raise HTTPException(status_code=500, detail=f"No se pueden leer los datos simulados: {error}") from error
@@ -72,6 +86,7 @@ class EstadoClase(str, Enum):
 
 
 class ClaseDetallePlataforma(BaseModel):
+    idClasePlataforma: int = Field(ge=1)
     numeroClase: int = Field(ge=1)
     nombreClase: str = Field(min_length=1)
     nombreModulo: str = Field(min_length=1)
@@ -100,7 +115,11 @@ class DetalleTallerPlataforma(BaseModel):
     @model_validator(mode="after")
     def validar_numeros_unicos(self):
         numeros = set()
+        identificadores = set()
         for clase in self.clases:
+            if clase.idClasePlataforma in identificadores:
+                raise ValueError("Los identificadores de clase no pueden repetirse")
+            identificadores.add(clase.idClasePlataforma)
             if clase.numeroClase in numeros:
                 raise ValueError("Los números de clase no pueden repetirse")
             numeros.add(clase.numeroClase)
@@ -123,3 +142,74 @@ def obtener_detalle_taller(id_taller_plataforma: int = Query(ge=1)):
     except (OSError, ValueError) as error:
         raise HTTPException(status_code=500,
                             detail=f"No se pueden leer los detalles simulados: {error}") from error
+
+
+# Evidencias: la API educativa real obtiene estos metadatos de su BD;
+# la simulada los obtiene del JSON local. La ruta se usa SOLO internamente.
+class ArchivoPlataforma(BaseModel):
+    id_archivo_plataforma: int = Field(ge=1)
+    id_clase_plataforma: int = Field(ge=1)
+    nombre_fisico: str = Field(min_length=1)
+    mime_type: str = Field(min_length=1)
+    tamaño: int = Field(ge=0)
+
+
+class RespuestaEvidencias(BaseModel):
+    id_taller: int = Field(ge=1)
+    evidencias: list[ArchivoPlataforma]
+
+
+def leer_registros_evidencias() -> list[dict]:
+    try:
+        datos = json.loads(EVIDENCIAS.read_text(encoding="utf-8"))
+        if not isinstance(datos, list):
+            raise ValueError("El archivo debe contener un array de registros")
+        identificadores = set()
+        for dato in datos:
+            if not isinstance(dato, dict):
+                raise ValueError("Registro de evidencia inválido")
+            ArchivoPlataforma.model_validate(dato)
+            if dato["id_archivo_plataforma"] in identificadores:
+                raise ValueError("Identificador de archivo duplicado")
+            identificadores.add(dato["id_archivo_plataforma"])
+            if not isinstance(dato.get("ruta"), str) or not dato["ruta"].strip():
+                raise ValueError("Una evidencia no tiene ruta física")
+            if not isinstance(dato.get("id_taller_plataforma"), int):
+                raise ValueError("Una evidencia no identifica el taller")
+        return datos
+    except (OSError, ValueError, KeyError) as error:
+        raise HTTPException(status_code=500, detail=f"Datos simulados de evidencias inválidos: {error}") from error
+
+
+@app.get("/evidencias", response_model=RespuestaEvidencias)
+def obtener_evidencias(id_taller_plataforma: int = Query(ge=1)):
+    registros = leer_registros_evidencias()
+    archivos = []
+    for registro in registros:
+        if registro["id_taller_plataforma"] == id_taller_plataforma:
+            archivos.append(ArchivoPlataforma.model_validate(registro))
+    return RespuestaEvidencias(id_taller=id_taller_plataforma, evidencias=archivos)
+
+
+@app.get("/evidencias/{id_archivo_plataforma}/archivo")
+def descargar_archivo_plataforma(id_archivo_plataforma: int):
+    if id_archivo_plataforma < 1:
+        raise HTTPException(status_code=404, detail="Archivo inexistente")
+    registros = leer_registros_evidencias()
+    for registro in registros:
+        if registro["id_archivo_plataforma"] == id_archivo_plataforma:
+            raiz = ARCHIVOS.resolve()
+            candidato = (raiz / registro["ruta"] / registro["nombre_fisico"]).resolve()
+            if not candidato.is_relative_to(raiz):
+                raise HTTPException(status_code=404, detail="Ruta fuera del almacenamiento autorizado")
+            if not candidato.is_file():
+                raise HTTPException(status_code=404, detail="El archivo físico no existe")
+            if candidato.stat().st_size != registro["tamaño"]:
+                raise HTTPException(status_code=500, detail="Tamaño de archivo inconsistente")
+            return FileResponse(
+                candidato,
+                media_type=registro["mime_type"],
+                filename=registro["nombre_fisico"],
+                content_disposition_type="inline",
+            )
+    raise HTTPException(status_code=404, detail="Archivo inexistente")
