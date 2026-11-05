@@ -31,6 +31,9 @@ public class Taller {
     @Column(name = "pendiente_baja", nullable = false)
     private boolean pendienteBaja;
 
+    @Column(name = "ultima_sincronizacion_clases")
+    private OffsetDateTime ultimaSincronizacionClases;
+
     protected Taller() { }
     public Taller(String identificador, DocenteProyecto asignacion) {
         idTallerPlataforma = identificador;
@@ -42,8 +45,12 @@ public class Taller {
         pendienteBaja = false;
     }
     public void marcarPendienteBaja() { pendienteBaja = true; }
+    public void registrarSincronizacionClases() {
+        ultimaSincronizacionClases = OffsetDateTime.now(ZoneOffset.UTC);
+    }
     public String getIdTallerPlataforma() { return idTallerPlataforma; }
     public DocenteProyecto getAsignacion() { return asignacion; }
     public boolean isPendienteBaja() { return pendienteBaja; }
     public OffsetDateTime getFechaSincronizacion() { return fechaSincronizacion; }
+    public OffsetDateTime getUltimaSincronizacionClases() { return ultimaSincronizacionClases; }
 }

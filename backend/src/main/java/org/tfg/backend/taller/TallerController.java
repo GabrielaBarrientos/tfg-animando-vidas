@@ -20,6 +20,13 @@ public class TallerController {
         return tallerService.listar(idProyecto, usuarioGoogle);
     }
 
+    @GetMapping("/{idTaller}")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO', 'EXTERNO')")
+    public DetalleTallerResponse obtenerDetalle(@PathVariable Long idProyecto,
+            @PathVariable String idTaller, @AuthenticationPrincipal OidcUser usuarioGoogle) {
+        return tallerService.obtenerDetalle(idProyecto, idTaller, usuarioGoogle);
+    }
+
     @GetMapping("/metadatos")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO', 'EXTERNO')")
     public TalleresMetadatosResponse obtenerMetadatos(@PathVariable Long idProyecto,
@@ -35,6 +42,14 @@ public class TallerController {
         return new SincronizacionResponse(cantidad);
     }
 
+    @PostMapping("/{idTaller}/clases/sincronizar")
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
+    public SincronizacionClasesResponse sincronizarClases(@PathVariable Long idProyecto,
+            @PathVariable String idTaller, @AuthenticationPrincipal OidcUser usuarioGoogle) {
+        int cantidad = tallerService.sincronizarClases(idProyecto, idTaller, usuarioGoogle);
+        return new SincronizacionClasesResponse(cantidad);
+    }
+
     @DeleteMapping("/{idTaller}/copia-local")
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
     public org.springframework.http.ResponseEntity<Void> eliminarCopiaLocal(
@@ -45,4 +60,5 @@ public class TallerController {
     }
 
     public record SincronizacionResponse(int cantidadTalleres) { }
+    public record SincronizacionClasesResponse(int cantidadClases) { }
 }
