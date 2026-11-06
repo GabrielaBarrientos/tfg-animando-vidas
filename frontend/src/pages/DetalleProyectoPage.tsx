@@ -289,7 +289,8 @@ function DetalleProyectoPage({
       }}>
         <ProyectoTabs valor={solapa} onCambiar={cambiarSolapa} />
 
-        <Box sx={{ p: { xs: 2, md: 3 }, flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <Box sx={{ p: solapa === 'programa' ? '12px 24px' : { xs: 2, md: 3 },
+          flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {cargando && <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}><CircularProgress /></Box>}
           {error !== '' && <Alert severity="error" action={<Button onClick={reintentar}>Reintentar</Button>}>{error}</Alert>}
           {!cargando && error === '' && detalle !== null && solapa === 'resumen' && (

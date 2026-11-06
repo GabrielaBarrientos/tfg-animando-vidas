@@ -17,11 +17,12 @@ interface EvidenciasTallerProps {
   clases: ClaseDetalle[];
   puedeEditar: boolean;
   onSesionExpirada: () => void;
+  onRegistrarComunicacion?: () => void;
 }
 
 /** Consulta solo PostgreSQL al abrir; sincroniza FastAPI únicamente por acción del usuario. */
 export default function EvidenciasTaller({ idProyecto, idTaller, clases, puedeEditar,
-  onSesionExpirada }: EvidenciasTallerProps) {
+  onSesionExpirada, onRegistrarComunicacion }: EvidenciasTallerProps) {
   const [datos, setDatos] = useState<EvidenciasTallerResponse | null>(null);
   const [filtro, setFiltro] = useState('todas');
   const [cargando, setCargando] = useState(true);
@@ -152,7 +153,8 @@ export default function EvidenciasTaller({ idProyecto, idTaller, clases, puedeEd
       <BarraEvidencias clases={clases} filtro={filtro}
         ultimaSincronizacion={datos?.ultimaSincronizacion || null}
         puedeEditar={puedeEditar} actualizando={actualizando}
-        onCambiarFiltro={setFiltro} onActualizar={actualizar} />
+        onCambiarFiltro={setFiltro} onActualizar={actualizar}
+        onRegistrarComunicacion={onRegistrarComunicacion} />
       {error !== '' && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {cargando && (
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>

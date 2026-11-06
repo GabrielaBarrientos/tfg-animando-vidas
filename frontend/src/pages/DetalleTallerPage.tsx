@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactElement, SyntheticEvent } from 'react';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert, Box, Breadcrumbs, Button, Chip, CircularProgress, Divider, Link, Paper,
   Snackbar, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
@@ -12,6 +13,9 @@ import { SesionExpiradaError } from '../services/erroresApi';
 import { colores } from '../theme';
 import EvidenciasTaller from '../components/EvidenciasTaller';
 import EncuestasTaller from '../components/EncuestasTaller';
+import ComunicacionesTaller from '../components/ComunicacionesTaller';
+import ModalNuevaComunicacion from '../components/ModalNuevaComunicacion';
+import { crearComunicacion, type CrearComunicacionRequest } from '../services/comunicacionesApi';
 
 type SolapaTaller = 'resumen' | 'evidencias' | 'encuestas' | 'comunicaciones';
 
@@ -138,6 +142,8 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
   const [error, setError] = useState('');
   const [aviso, setAviso] = useState('');
   const [solapa, setSolapa] = useState<SolapaTaller>('resumen');
+  const [nuevaComunicacionAbierta, setNuevaComunicacionAbierta] = useState(false);
+  const [versionComunicaciones, setVersionComunicaciones] = useState(0);
 
   useEffect(function consultarDetalleAlIngresar() {
     let activo = true;
@@ -176,9 +182,21 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
 
   function seleccionarSolapa(_evento: SyntheticEvent, siguiente: string): void {
     if (siguiente === 'resumen' || siguiente === 'evidencias'
-        || siguiente === 'encuestas' || siguiente === 'comunicaciones') {
+        || siguiente === 'encuestas' || (siguiente === 'comunicaciones' && puedeActualizar)) {
       setSolapa(siguiente);
     }
+  }
+
+  function abrirNuevaComunicacion(): void {
+    if (puedeActualizar) setNuevaComunicacionAbierta(true);
+  }
+
+  async function guardarNuevaComunicacion(datos: CrearComunicacionRequest): Promise<void> {
+    await crearComunicacion(proyecto.idProyecto, idTaller, datos);
+    setNuevaComunicacionAbierta(false);
+    setVersionComunicaciones(version => version + 1);
+    setSolapa('comunicaciones');
+    setAviso('Comunicación registrada correctamente.');
   }
 
   function cerrarAviso(): void { setAviso(''); }
@@ -223,7 +241,7 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
         <Tab label="Resumen" value="resumen" />
         <Tab label="Evidencias" value="evidencias" />
         <Tab label="Encuestas" value="encuestas" />
-        <Tab label="Comunicaciones" value="comunicaciones" />
+        {puedeActualizar && <Tab label="Comunicaciones" value="comunicaciones" />}
         </Tabs>
         <Box sx={{ padding: '12px 24px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
 
@@ -238,11 +256,11 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
           )}
           {solapa === 'resumen' && (
             <>
-              <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 1 }}>
+              <Paper variant="outlined" sx={{ p: '12px', mb: 3, borderRadius: 1 }}>
                 <Box sx={{ display: 'grid', gridTemplateColumns: {
                   xs: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))',
                   xl: 'repeat(6, minmax(0, 1fr))'
-                }, columnGap: 3, rowGap: 3 }}>
+                }, columnGap: 3, rowGap: '12px' }}>
                   <CampoResumen titulo="Nombre del docente" valor={detalle.nombreDocente} />
                   <CampoResumen titulo="Usuario de plataforma" valor={detalle.usuarioPlataforma} />
                   <CampoResumen titulo="Total de clases" valor={String(detalle.totalClases)} />
@@ -263,13 +281,14 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
                 <Typography variant="h6">Seguimiento de clases</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                   {puedeActualizar && (
-                    <Button variant="outlined" onClick={actualizarClases} disabled={actualizando}>
+                    <Button variant="outlined" startIcon={<RefreshIcon />}
+                      onClick={actualizarClases} disabled={actualizando}>
                       {actualizando ? 'Actualizando...' : 'ACTUALIZAR CLASES'}
                     </Button>
                   )}
-                  <Tooltip title="Se implementará en el incremento de Comunicaciones">
-                    <span><Button variant="outlined" disabled>REGISTRAR COMUNICACIÓN</Button></span>
-                  </Tooltip>
+                  {puedeActualizar && <Button variant="outlined" onClick={abrirNuevaComunicacion}>
+                    REGISTRAR COMUNICACIÓN
+                  </Button>}
                 </Box>
               </Box>
               <TablaClases clases={detalle.clases} />
@@ -285,21 +304,28 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
           {solapa === 'evidencias' && (
             <EvidenciasTaller idProyecto={proyecto.idProyecto} idTaller={idTaller}
               clases={detalle.clases} puedeEditar={puedeActualizar}
-              onSesionExpirada={onSesionExpirada} />
+              onSesionExpirada={onSesionExpirada}
+              onRegistrarComunicacion={abrirNuevaComunicacion} />
           )}
           {solapa === 'encuestas' && (
             <EncuestasTaller idProyecto={proyecto.idProyecto} idTaller={idTaller}
               puedeActualizar={puedeActualizar} onSesionExpirada={onSesionExpirada} />
           )}
-          {solapa === 'comunicaciones' && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              El seguimiento de comunicaciones se incorporará en un incremento posterior.
-            </Alert>
+          {puedeActualizar && solapa === 'comunicaciones' && (
+            <ComunicacionesTaller key={versionComunicaciones}
+              idProyecto={proyecto.idProyecto} idTaller={idTaller}
+              onNuevaComunicacion={abrirNuevaComunicacion}
+              onSesionExpirada={onSesionExpirada} onAviso={setAviso} />
           )}
         </>
       )}
         </Box>
       </Paper>
+
+      {puedeActualizar && nuevaComunicacionAbierta && (
+        <ModalNuevaComunicacion onCancelar={() => setNuevaComunicacionAbierta(false)}
+          onGuardar={guardarNuevaComunicacion} onSesionExpirada={onSesionExpirada} />
+      )}
 
       <Snackbar open={aviso !== ''} autoHideDuration={4500} onClose={cerrarAviso}
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
