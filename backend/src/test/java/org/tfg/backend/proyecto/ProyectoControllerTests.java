@@ -2,6 +2,7 @@
 package org.tfg.backend.proyecto;
 
 import java.time.Year;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -12,10 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.tfg.backend.integration.educationalplatform.EducationalPlatformClient;
+import org.tfg.backend.integration.educationalplatform.PlatformProgramaResponse;
 
 import org.tfg.backend.empresa.Empresa;
 import org.tfg.backend.empresa.EmpresaRepository;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +35,9 @@ class ProyectoControllerTests {
 
     @Autowired
     private EmpresaRepository empresaRepository;
+
+    @MockitoBean
+    private EducationalPlatformClient plataforma;
 
     private Empresa crearEmpresaPrueba() {
         String nombre = "Empresa " + UUID.randomUUID();
@@ -64,6 +72,17 @@ class ProyectoControllerTests {
                 anio,
                 empresa.getIdEmpresa()
         );
+
+        // El alta exige un programa real y válido antes de persistir el proyecto.
+        PlatformProgramaResponse programa = new PlatformProgramaResponse(List.of(
+                new PlatformProgramaResponse.ClasePrograma(7L, 1,
+                        "Encuentro 1 - El Arca de Noé", "Introducción al dibujo", List.of(
+                                new PlatformProgramaResponse.PreguntaPrograma(101L, 1,
+                                        "texto", "clase", "¿Cómo resultó la clase?")
+                        ))
+        ));
+        when(plataforma.obtenerPrograma("Una noche en el prado", empresa.getNombre(), anio))
+                .thenReturn(programa);
 
         String nombreCompleto = "Una noche en el prado - " + empresa.getNombre() + " - " + anio;
 

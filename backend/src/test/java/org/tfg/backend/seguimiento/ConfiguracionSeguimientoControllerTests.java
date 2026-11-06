@@ -91,11 +91,13 @@ class ConfiguracionSeguimientoControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(solicitudJson(admin.getIdUsuario())))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(true))
                 .andExpect(jsonPath("$.estadoProyecto").value("PLANIFICADO"))
                 .andExpect(jsonPath("$.umbralAtrasoSemanas").value(3));
 
         mockMvc.perform(get("/api/proyectos/{id}/seguimiento", proyecto.getIdProyecto()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(true))
                 .andExpect(jsonPath("$.idResponsableSeguimiento").value(admin.getIdUsuario()));
     }
 
@@ -129,9 +131,22 @@ class ConfiguracionSeguimientoControllerTests {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
-    void consultaConfiguracionNoExistenteRetorna404() throws Exception {
+    void consultaSinConfiguracionRetorna200ConCamposNulos() throws Exception {
         Proyecto proyecto = crearProyecto();
         mockMvc.perform(get("/api/proyectos/{id}/seguimiento", proyecto.getIdProyecto()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(false))
+                .andExpect(jsonPath("$.idProyecto").value(proyecto.getIdProyecto()))
+                .andExpect(jsonPath("$.idConfiguracionSeguimiento").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.umbralProximoAtrasoSemanas").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.idResponsableSeguimiento").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.estadoProyecto").value("PENDIENTE_PLANIFICACION"));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    void consultaProyectoInexistenteRetorna404() throws Exception {
+        mockMvc.perform(get("/api/proyectos/{id}/seguimiento", -1L))
                 .andExpect(status().isNotFound());
     }
 

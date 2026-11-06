@@ -26,10 +26,28 @@ export interface GuardarSeguimientoRequest {
 }
 
 export interface ConfiguracionSeguimiento extends GuardarSeguimientoRequest {
+  configurada: true;
   idConfiguracionSeguimiento: number;
   idProyecto: number;
   estadoProyecto: string;
 }
+
+interface ConfiguracionSeguimientoPendiente {
+  configurada: false;
+  idConfiguracionSeguimiento: null;
+  idProyecto: number;
+  umbralProximoAtrasoSemanas: null;
+  umbralAtrasoSemanas: null;
+  idResponsableSeguimiento: null;
+  diaInformeSemanal: null;
+  idResponsableProyecto: null;
+  tipoDiaInformeMensual: null;
+  diaInformeMensual: null;
+  estadoProyecto: string;
+}
+
+type ConsultaConfiguracionSeguimientoResponse =
+  ConfiguracionSeguimiento | ConfiguracionSeguimientoPendiente;
 
 export async function obtenerResponsablesElegibles(idProyecto: number): Promise<ResponsableElegible[]> {
   const respuesta = await fetch(`/api/proyectos/${idProyecto}/responsables-elegibles`, {
@@ -55,15 +73,17 @@ export async function obtenerConfiguracionSeguimiento(idProyecto: number): Promi
 
   await verificarSesionEnRespuesta(respuesta);
 
-  if (respuesta.status === 404) {
-    return null;
-  }
-
+  // Un 404 significa que el proyecto no existe; no representa seguimiento pendiente.
   if (!respuesta.ok) {
     throw new Error('No se pudo consultar la configuración del seguimiento.');
   }
 
-  const configuracion: ConfiguracionSeguimiento = await respuesta.json();
+  const configuracion: ConsultaConfiguracionSeguimientoResponse = await respuesta.json();
+  // La pantalla conserva sus valores iniciales cuando aún no hay configuración persistida.
+  if (!configuracion.configurada) {
+    return null;
+  }
+
   return configuracion;
 }
 

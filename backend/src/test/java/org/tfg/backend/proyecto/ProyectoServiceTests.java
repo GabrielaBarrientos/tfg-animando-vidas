@@ -11,6 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.tfg.backend.programa.ProgramaService;
+import org.tfg.backend.integration.educationalplatform.PlatformProgramaResponse;
+import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
 
 import org.tfg.backend.empresa.Empresa;
 import org.tfg.backend.empresa.EmpresaRepository;
@@ -23,6 +28,15 @@ class ProyectoServiceTests {
 
     @Autowired
     private ProyectoService proyectoService;
+
+    @MockitoBean
+    private ProgramaService programaService;
+
+    @BeforeEach
+    void stubProgramaRemoto() {
+        when(programaService.consultarYValidar(anyString(), anyString(), any(Short.class)))
+                .thenReturn(new PlatformProgramaResponse(java.util.List.of()));
+    }
 
     @Autowired
     private EmpresaRepository empresaRepository;

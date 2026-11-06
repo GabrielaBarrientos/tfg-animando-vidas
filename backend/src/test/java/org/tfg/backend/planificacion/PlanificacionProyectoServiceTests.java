@@ -96,6 +96,7 @@ class PlanificacionProyectoServiceTests {
         assertEquals(proyecto.getIdProyecto(), respuesta.idProyecto());
 
         assertEquals(6, respuesta.cantidadClases());
+        assertTrue(respuesta.configurada());
 
         assertEquals(FrecuenciaClases.MENSUAL, respuesta.frecuenciaClases());
 
@@ -143,6 +144,7 @@ class PlanificacionProyectoServiceTests {
 
         PlanificacionProyectoResponse respuesta = planificacionService.obtener(proyecto.getIdProyecto());
 
+        assertTrue(respuesta.configurada());
         assertEquals(LocalDate.of(2027, 3, 15), respuesta.fechaInicio());
 
         assertEquals(LocalDate.of(2027, 9, 14), respuesta.fechaFinalizacion());
@@ -246,22 +248,34 @@ class PlanificacionProyectoServiceTests {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
-    void devuelveErrorSiProyectoNoTienePlanificacion() {
+    void proyectoExistenteSinPlanificacionDevuelveRespuestaPendiente() {
 
         Proyecto proyecto = crearProyectoPrueba();
 
         Optional<PlanificacionProyecto> resultado = planificacionRepository.findByProyecto_IdProyecto(
                         proyecto.getIdProyecto());
-
         assertTrue(resultado.isEmpty());
 
+        PlanificacionProyectoResponse respuesta = planificacionService.obtener(proyecto.getIdProyecto());
+
+        assertFalse(respuesta.configurada());
+        assertEquals(proyecto.getIdProyecto(), respuesta.idProyecto());
+        assertNull(respuesta.idPlanificacionProyecto());
+        assertNull(respuesta.fechaInicio());
+        assertNull(respuesta.fechaFinalizacion());
+        assertNull(respuesta.cantidadClases());
+        assertNull(respuesta.frecuenciaClases());
+        assertNull(respuesta.duracionMeses());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    void proyectoInexistenteNoTienePlanificacion() {
+
         try {
-            planificacionService.obtener(proyecto.getIdProyecto());
-
-            fail("Se esperaba un error por planificación inexistente");
-
+            planificacionService.obtener(-1L);
+            fail("Se esperaba un error por proyecto inexistente");
         } catch (ResponseStatusException excepcion) {
-
             assertEquals(HttpStatus.NOT_FOUND, excepcion.getStatusCode());
         }
     }

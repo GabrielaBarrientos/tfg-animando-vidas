@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.tfg.backend.proyecto.Proyecto;
+import org.tfg.backend.programa.Programa;
 
 @Entity
 @Table(name = "pregunta_proyecto")
@@ -25,8 +26,12 @@ public class PreguntaProyecto {
     @JoinColumn(name = "id_proyecto", nullable = false)
     private Proyecto proyecto;
 
-    @Column(name = "id_pregunta_plataforma", nullable = false, unique = true)
+    @Column(name = "id_pregunta_plataforma", nullable = false)
     private Long idPreguntaPlataforma;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "id_programa", nullable = false)
+    private Programa programa;
 
     @Column(name = "enunciado", nullable = false, columnDefinition = "text")
     private String enunciado;
@@ -40,9 +45,10 @@ public class PreguntaProyecto {
 
     protected PreguntaProyecto() { }
 
-    public PreguntaProyecto(Proyecto proyecto, Long idPreguntaPlataforma,
+    public PreguntaProyecto(Proyecto proyecto, Programa programa, Long idPreguntaPlataforma,
             String enunciado, TipoPregunta tipo, Integer orden) {
         this.proyecto = proyecto;
+        this.programa = programa;
         this.idPreguntaPlataforma = idPreguntaPlataforma;
         actualizar(enunciado, tipo, orden);
     }
@@ -54,6 +60,7 @@ public class PreguntaProyecto {
     }
 
     public Long getIdPreguntaProyecto() { return idPreguntaProyecto; }
+    public Programa getPrograma() { return programa; }
     public Proyecto getProyecto() { return proyecto; }
     public Long getIdPreguntaPlataforma() { return idPreguntaPlataforma; }
     public String getEnunciado() { return enunciado; }

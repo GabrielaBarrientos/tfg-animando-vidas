@@ -100,19 +100,6 @@ async function ejecutarSincronizacion(idProyecto: number): Promise<number> {
   return resultado.cantidadTalleres;
 }
 
-/** Solo puede eliminarse una copia marcada ausente por una sincronización exitosa. */
-export async function eliminarCopiaLocalTaller(idProyecto: number, idTaller: string): Promise<void> {
-  const csrf = await obtenerTokenCsrf();
-  const cabeceras = new Headers();
-  cabeceras.set(csrf.headerName, csrf.token);
-  const respuesta = await fetch(
-    `/api/proyectos/${idProyecto}/talleres/${encodeURIComponent(idTaller)}/copia-local`,
-    { method: 'DELETE', credentials: 'include', headers: cabeceras }
-  );
-  await verificarSesionEnRespuesta(respuesta);
-  if (respuesta.status === 409) throw new Error('La copia local ya no está pendiente de baja. Actualizá los talleres.');
-  if (!respuesta.ok) throw new Error('No se pudo eliminar la copia local del taller.');
-}
 
 /** Resumen persistido en el proyecto: no depende de los filtros de la tabla. */
 export interface TalleresMetadatos {

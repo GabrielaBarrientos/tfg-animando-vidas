@@ -1,0 +1,257 @@
+[
+  {
+    "nombreProyecto": "Una noche en el prado",
+    "empresa": "Fundación Prosegur",
+    "anio": 2026,
+    "clase": [
+      {
+        "idClasePlataforma": 7,
+        "numeroClase": 1,
+        "nombreClase": "ENCUENTRO 1 - EL ARCA DE NOE (Principios del dibujo)",
+        "nombreModulo": "INTRODUCCIÓN AL DIBUJO",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 101,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "intro",
+            "enunciado": "¿Te resultó fácil adaptarte a la plataforma? Observaciones o comentarios que quieras dejarnos."
+          },
+          {
+            "idPreguntaPlataforma": 102,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Para establecer un diagnóstico al momento del inicio del taller nos gustaría que nos cuentes brevemente: nivel de comprensión lectora de los participantes"
+          },
+          {
+            "idPreguntaPlataforma": 103,
+            "numeroPregunta": 3,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Son participativos en clase? ¿Tienen dificultades para expresar sus ideas?"
+          },
+          {
+            "idPreguntaPlataforma": 104,
+            "numeroPregunta": 4,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo se llevan para trabajar en grupo?"
+          },
+          {
+            "idPreguntaPlataforma": 105,
+            "numeroPregunta": 5,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Qué manejo posee el grupo de las herramientas de dibujo, historieta y animación? ¿Cuentan con conocimientos previos?"
+          },
+          {
+            "idPreguntaPlataforma": 106,
+            "numeroPregunta": 6,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 8,
+        "numeroClase": 2,
+        "nombreClase": "ENCUENTRO 2 - APRENDER COMO RUBENS",
+        "nombreModulo": "INTRODUCCIÓN AL DIBUJO",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 107,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 108,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 9,
+        "numeroClase": 3,
+        "nombreClase": "ENCUENTRO 3 - LOS RETRATOS FALTANTES EN EL PRADO (dibujo a partir de proporciones)",
+        "nombreModulo": "INTRODUCCIÓN AL DIBUJO",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 109,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 110,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 10,
+        "numeroClase": 4,
+        "nombreClase": "ENCUENTRO 4 - MISTERIOS EN EL PRADO (Reordenar historietas)",
+        "nombreModulo": "INTRODUCCIÓN A LA REALIZACIÓN DE HISTORIETAS",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 111,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 112,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 11,
+        "numeroClase": 5,
+        "nombreClase": "ENCUENTRO 5 Y 6 - EL CANDIDATO (Crear historieta propia)",
+        "nombreModulo": "INTRODUCCIÓN A LA REALIZACIÓN DE HISTORIETAS",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 113,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 114,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 12,
+        "numeroClase": 6,
+        "nombreClase": "ENCUENTRO 7 - EL GALOPE DE CARLOS",
+        "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN Y REALIZACIÓN DE CORTOMETRAJES",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 115,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 116,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 13,
+        "numeroClase": 7,
+        "nombreClase": "ENCUENTRO 8 - UNA HISTORIA ANIMADA EN EL PRADO (guión)",
+        "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN Y REALIZACIÓN DE CORTOMETRAJES",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 117,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 118,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 14,
+        "numeroClase": 8,
+        "nombreClase": "ENCUENTRO 9 - PERSONAJES Y FONDOS",
+        "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN Y REALIZACIÓN DE CORTOMETRAJES",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 119,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 120,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 15,
+        "numeroClase": 9,
+        "nombreClase": "ENCUENTRO 10 Y 11 - ANIMACIÓN POR CUT OUT",
+        "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN Y REALIZACIÓN DE CORTOMETRAJES",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 121,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 122,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      },
+      {
+        "idClasePlataforma": 16,
+        "numeroClase": 10,
+        "nombreClase": "ENCUENTRO 12 - GALERIA DE VIRTUDES",
+        "nombreModulo": "INTRODUCCIÓN A LA ANIMACIÓN Y REALIZACIÓN DE CORTOMETRAJES",
+        "pregunta": [
+          {
+            "idPreguntaPlataforma": 123,
+            "numeroPregunta": 1,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?"
+          },
+          {
+            "idPreguntaPlataforma": 124,
+            "numeroPregunta": 2,
+            "formato": "texto",
+            "tipo": "clase",
+            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación."
+          }
+        ]
+      }
+    ]
+  }
+]

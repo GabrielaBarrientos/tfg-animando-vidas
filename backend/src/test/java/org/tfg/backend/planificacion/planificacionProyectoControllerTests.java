@@ -106,6 +106,7 @@ class PlanificacionProyectoControllerTests {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(cuerpo))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(true))
                 .andExpect(jsonPath("$.idPlanificacionProyecto").isNumber())
                 .andExpect(jsonPath("$.idProyecto").isNumber())
                 .andExpect(jsonPath("$.fechaInicio").value("2027-03-15"))
@@ -126,6 +127,7 @@ class PlanificacionProyectoControllerTests {
                         get("/api/proyectos/{idProyecto}/planificacion",
                                 proyecto.getIdProyecto()))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(true))
                 .andExpect(jsonPath("$.fechaInicio").value("2027-03-15"))
                 .andExpect(jsonPath("$.fechaFinalizacion").value("2027-09-14"))
                 .andExpect(jsonPath("$.cantidadClases").value(6))
@@ -256,13 +258,29 @@ class PlanificacionProyectoControllerTests {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
-    void devuelveErrorSiNoExistePlanificacion() throws Exception {
+    void proyectoExistenteSinPlanificacionDevuelve200ConCamposPendientes() throws Exception {
 
         Proyecto proyecto = crearProyectoPrueba();
 
         mockMvc.perform(
                         get("/api/proyectos/{idProyecto}/planificacion",
                                 proyecto.getIdProyecto()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.configurada").value(false))
+                .andExpect(jsonPath("$.idProyecto").value(proyecto.getIdProyecto()))
+                .andExpect(jsonPath("$.idPlanificacionProyecto").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.fechaInicio").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.fechaFinalizacion").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.cantidadClases").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.frecuenciaClases").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.duracionMeses").value(org.hamcrest.Matchers.nullValue()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    void proyectoInexistenteDevuelve404EnConsultaPlanificacion() throws Exception {
+
+        mockMvc.perform(get("/api/proyectos/{idProyecto}/planificacion", -1L))
                 .andExpect(status().isNotFound());
     }
 

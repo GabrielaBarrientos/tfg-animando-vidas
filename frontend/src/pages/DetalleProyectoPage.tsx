@@ -15,6 +15,7 @@ import {
 import type { Proyecto } from '../services/proyectosApi';
 import { colores } from '../theme';
 import ProyectoTabs, { type SolapaProyecto } from '../components/ProyectoTabs';
+import ProgramaProyecto from '../components/ProgramaProyecto';
 
 
 interface DetalleProyectoPageProps {
@@ -225,7 +226,7 @@ function DetalleProyectoPage({
   }
 
   function abrirConfiguracionEsquema() {
-    setSolapa('preguntas');
+    setSolapa('programa');
   }
 
   function abrirTalleres() {
@@ -383,18 +384,18 @@ function DetalleProyectoPage({
                   )}
                 </Panel>
 
-                <Panel titulo="Preguntas de encuestas"
+                <Panel titulo="Programa del proyecto"
                   accion={puedeEditar ? (
                     <Button variant="text" onClick={abrirConfiguracionEsquema}>
-                      Configurar esquema
+                      Ver programa
                     </Button>
                   ) : undefined}>
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 3 }}>
-                    <Dato titulo="Preguntas obtenidas desde la plataforma" valor="Ninguna" />
-                    <Dato titulo="Estado" valor="Sincronización pendiente" />
+                    <Dato titulo="Clases del programa" valor="Ninguna" />
+                    <Dato titulo="Estado" valor="Disponible en la pestaña Programa" />
                   </Box>
                   <Typography variant="body2" sx={{ color: colores.textoSecundario, mt: 2 }}>
-                    La sincronización y configuración del análisis de preguntas se implementarán en incrementos posteriores.
+                    El programa contiene las clases y preguntas comunes a todos los talleres.
                   </Typography>
                 </Panel>
               </Box>
@@ -432,13 +433,16 @@ function DetalleProyectoPage({
               </Box>
             </Box>
           )}
-          {!cargando && error === '' && detalle !== null && solapa !== 'resumen' && (
+          {!cargando && error === '' && detalle !== null && solapa === 'programa' && (
+            <ProgramaProyecto idProyecto={proyecto.idProyecto} puedeActualizar={rol !== 'EXTERNO'}
+              onSesionExpirada={onSesionExpirada} />
+          )}
+          {!cargando && error === '' && detalle !== null && solapa !== 'resumen' && solapa !== 'programa' && (
               <Alert severity="info">
-                {solapa === 'preguntas' ? 'La sincronización de preguntas y su configuración estarán disponibles en un incremento posterior.'
-                  : solapa === 'talleres' ? 'La consulta de talleres requiere la integración con la plataforma educativa.'
-                  : solapa === 'evidencias' ? 'Las evidencias se consultarán cuando se sincronicen los talleres.'
-                  : solapa === 'encuestas' ? 'Las encuestas estarán disponibles cuando se implementen los talleres.'
-                  : 'El resumen de avance estará disponible cuando existan datos de talleres sincronizados.'}
+                {solapa === 'talleres' ? 'La consulta de talleres requiere la integración con la plataforma educativa.'
+                  : solapa === 'evidencias' ? 'Las evidencias globales del proyecto se implementarán en la Etapa 3.'
+                  : solapa === 'encuestas' ? 'Las encuestas globales del proyecto se implementarán en la Etapa 3.'
+                  : 'El resumen de avance global del proyecto se implementará en la Etapa 3.'}
               </Alert>
             )}
         </Box>

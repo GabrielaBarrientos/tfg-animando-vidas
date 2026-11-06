@@ -76,7 +76,19 @@ public class PlanificacionProyectoService {
         Optional<PlanificacionProyecto> resultado = planificacionRepository.findByProyecto_IdProyecto(idProyecto);
 
         if (resultado.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Planificación no encontrada");
+            if (!proyectoRepository.existsById(idProyecto)) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Proyecto no encontrado");
+            }
+
+            return new PlanificacionProyectoResponse(
+                    null,
+                    idProyecto,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    false);
         }
 
         PlanificacionProyecto planificacion = resultado.get();
@@ -134,7 +146,8 @@ public class PlanificacionProyectoService {
                 planificacion.getFechaFinalizacion(),
                 planificacion.getCantidadClases(),
                 planificacion.getFrecuenciaClases(),
-                duracionMeses);
+                duracionMeses,
+                true);
     }
 
     private long calcularDuracionMeses(LocalDate fechaInicio, LocalDate fechaFinalizacion) {

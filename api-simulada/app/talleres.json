@@ -1,6 +1,5 @@
 [
   {
-    "idTaller": "8",
     "nombreProyecto": "Una noche en el prado",
     "anioProyecto": 2026,
     "nombreEmpresa": "Fundación Prosegur",
@@ -12,44 +11,7 @@
         "fechaRealizacion": "2026-05-15",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 0,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 101,
-            "enunciado": "¿Te resultó fácil adaptarte a la plataforma? Observaciones o comentarios que quieras dejarnos.",
-            "tipo": "introducción",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 102,
-            "enunciado": "Para establecer un diagnóstico al momento del inicio del taller nos gustaría que nos cuentes brevemente: nivel de comprensión lectora de los participantes",
-            "tipo": "clase",
-            "orden": 2
-          },
-          {
-            "idPreguntaPlataforma": 103,
-            "enunciado": "¿Son participativos en clase? ¿Tienen dificultades para expresar sus ideas?",
-            "tipo": "clase",
-            "orden": 3
-          },
-          {
-            "idPreguntaPlataforma": 104,
-            "enunciado": "¿Cómo se llevan para trabajar en grupo?",
-            "tipo": "clase",
-            "orden": 4
-          },
-          {
-            "idPreguntaPlataforma": 105,
-            "enunciado": "¿Qué manejo posee el grupo de las herramientas de dibujo, historieta y animación? ¿Cuentan con conocimientos previos?",
-            "tipo": "clase",
-            "orden": 5
-          },
-          {
-            "idPreguntaPlataforma": 106,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 6
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 8,
@@ -57,20 +19,7 @@
         "fechaRealizacion": "2026-05-26",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 107,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 108,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 9,
@@ -78,20 +27,7 @@
         "fechaRealizacion": "2026-05-26",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 109,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 110,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 10,
@@ -99,20 +35,7 @@
         "fechaRealizacion": "2026-06-09",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 2,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 111,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 112,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 11,
@@ -120,20 +43,7 @@
         "fechaRealizacion": "2026-06-23",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 2,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 113,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 114,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 12,
@@ -141,20 +51,7 @@
         "fechaRealizacion": "2026-07-14",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 115,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 116,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 13,
@@ -162,20 +59,7 @@
         "fechaRealizacion": "2026-10-06",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 117,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 118,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 14,
@@ -183,20 +67,7 @@
         "fechaRealizacion": "2026-10-13",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 3,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 119,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 120,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 15,
@@ -204,42 +75,17 @@
         "fechaRealizacion": "2026-10-29",
         "cantidadParticipantes": 9,
         "cantidadEvidencias": 0,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 121,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 122,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Realizada"
       },
       {
         "idClasePlataforma": 16,
         "numeroClase": 10,
         "fechaRealizacion": null,
-        "cantidadParticipantes": null,
+        "cantidadParticipantes": 0,
         "cantidadEvidencias": 0,
-        "preguntas": [
-          {
-            "idPreguntaPlataforma": 123,
-            "enunciado": "¿Cómo resultó la clase? ¿Qué factores resultaron positivos? ¿Qué situaciones podrían mejorarse?",
-            "tipo": "clase",
-            "orden": 1
-          },
-          {
-            "idPreguntaPlataforma": 124,
-            "enunciado": "Contanos si observás cambios en los participantes del taller en comprensión lectora, expresión personal, trabajo en equipo y manejo de herramientas de dibujo, historieta y animación.",
-            "tipo": "clase",
-            "orden": 2
-          }
-        ]
+        "estado": "Pendiente"
       }
-    ]
+    ],
+    "idTallerPlataforma": "8"
   }
 ]

@@ -33,6 +33,7 @@ import {
 } from '../services/empresasApi';
 
 import {
+  ConflictoCrearProyectoError,
   crearProyecto,
   type Proyecto
 } from '../services/proyectosApi';
@@ -165,7 +166,11 @@ function CrearProyectoPage({
         return;
       }
 
-      setError('No se pudo registrar el proyecto.');
+      if (excepcion instanceof ConflictoCrearProyectoError) {
+        setError(excepcion.message);
+      } else {
+        setError('No se pudo registrar el proyecto.');
+      }
 
     } finally {
       setGuardando(false);

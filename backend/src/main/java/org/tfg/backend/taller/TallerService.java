@@ -18,12 +18,13 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import org.tfg.backend.encuesta.PreguntasProyectoSincronizador;
+import org.tfg.backend.programa.Programa;
+import org.tfg.backend.programa.ProgramaRepository;
 import org.tfg.backend.docente.DocenteProyecto;
 import org.tfg.backend.docente.DocenteProyectoRepository;
 import org.tfg.backend.integration.educationalplatform.EducationalPlatformClient;
 import org.tfg.backend.integration.educationalplatform.PlatformTallerResponse;
-import org.tfg.backend.integration.educationalplatform.PlatformDetalleTallerResponse;
+
 import org.tfg.backend.planificacion.PlanificacionProyecto;
 import org.tfg.backend.planificacion.PlanificacionProyectoRepository;
 import org.tfg.backend.proyecto.Proyecto;
@@ -45,14 +46,14 @@ public class TallerService {
     private final ConfiguracionSeguimientoRepository seguimientoRepository;
     private final EducationalPlatformClient platformClient;
     private final TallerSeguimientoCalculador calculador;
-    private final PreguntasProyectoSincronizador preguntasSincronizador;
+    private final ProgramaRepository programaRepository;
 
     public TallerService(ProyectoRepository proyectoRepository, UsuarioRepository usuarioRepository,
             DocenteProyectoRepository asociacionRepository, TallerRepository tallerRepository,
             ClaseTallerRepository claseRepository, PlanificacionProyectoRepository planificacionRepository,
             ConfiguracionSeguimientoRepository seguimientoRepository,
             EducationalPlatformClient platformClient, TallerSeguimientoCalculador calculador,
-            PreguntasProyectoSincronizador preguntasSincronizador) {
+            ProgramaRepository programaRepository) {
         this.proyectoRepository = proyectoRepository;
         this.usuarioRepository = usuarioRepository;
         this.asociacionRepository = asociacionRepository;
@@ -62,7 +63,7 @@ public class TallerService {
         this.seguimientoRepository = seguimientoRepository;
         this.platformClient = platformClient;
         this.calculador = calculador;
-        this.preguntasSincronizador = preguntasSincronizador;
+        this.programaRepository = programaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -114,32 +115,19 @@ public class TallerService {
                 .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller);
         TallerResumenResponse resumen = calculador.calcular(taller, clasesGuardadas,
                 plan.get(), seguimiento.get(), LocalDate.now());
-        Map<Integer, ClaseTaller> clasesPorNumero = new HashMap<>();
-        for (ClaseTaller clase : clasesGuardadas) {
-            clasesPorNumero.put(clase.getNumeroClase(), clase);
-        }
-
         List<DetalleTallerResponse.ClaseDetalle> clases = new ArrayList<>();
-        for (int numero = 1; numero <= plan.get().getCantidadClases(); numero++) {
+        for (ClaseTaller claseGuardada : clasesGuardadas) {
+            int numero = claseGuardada.getNumeroClase();
             LocalDate fechaPrevista = calculador.calcularFechaLimite(
                     plan.get().getFechaInicio(), plan.get().getFrecuenciaClases(), numero);
-            ClaseTaller claseGuardada = clasesPorNumero.get(numero);
-            LocalDate fechaRealizacion = null;
-            Integer participantes = null;
-            int cantidadEvidencias = 0;
-            if (claseGuardada != null) {
-                fechaRealizacion = claseGuardada.getFechaRealizacion();
-                participantes = claseGuardada.getCantidadParticipantes();
-                cantidadEvidencias = claseGuardada.getCantidadEvidencias();
-            }
-            DetalleTallerResponse.EstadoClase estado = DetalleTallerResponse.EstadoClase.PENDIENTE;
-            if (fechaRealizacion != null) {
-                estado = DetalleTallerResponse.EstadoClase.REALIZADA;
-            }
+            DetalleTallerResponse.EstadoClase estado =
+                    claseGuardada.getEstadoClase() == EstadoClaseTaller.REALIZADA
+                    ? DetalleTallerResponse.EstadoClase.REALIZADA
+                    : DetalleTallerResponse.EstadoClase.PENDIENTE;
             clases.add(new DetalleTallerResponse.ClaseDetalle(
-                    claseGuardada == null ? null : claseGuardada.getIdClaseTaller(), numero, claseGuardada == null ? null : claseGuardada.getNombreClase(),
-                    claseGuardada == null ? null : claseGuardada.getNombreModulo(),
-                    fechaPrevista, fechaRealizacion, participantes, cantidadEvidencias, estado));
+                    claseGuardada.getIdClaseTaller(), numero, claseGuardada.getNombreClase(),
+                    claseGuardada.getNombreModulo(), fechaPrevista, claseGuardada.getFechaRealizacion(),
+                    claseGuardada.getCantidadParticipantes(), claseGuardada.getCantidadEvidencias(), estado));
         }
         DocenteProyecto asociacion = taller.getAsignacion();
         String nombreDocente = asociacion.getDocente().getNombres() + " "
@@ -164,15 +152,22 @@ public class TallerService {
                 proyecto.getUltimaSincronizacionTalleres(), proyecto.getCantidadTalleresPlataforma());
     }
 
-    /** Sincronización transaccional: valida el lote completo antes de escribir. */
+    /** Todos los talleres y sus clases se actualizan desde GET /talleres en una única transacción. */
     @Transactional
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
     public int sincronizar(Long idProyecto, OidcUser usuarioGoogle) {
         Proyecto proyecto = buscarProyecto(idProyecto);
         verificarAcceso(proyecto, usuarioGoogle);
+        if (!proyecto.isProgramaSincronizado()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Primero sincronizá el programa del proyecto");
+        }
         Optional<PlanificacionProyecto> plan = planificacionRepository.findByProyecto_IdProyecto(idProyecto);
         if (plan.isEmpty()) throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no tiene planificación");
-
+        Map<Long, Programa> definiciones = new HashMap<>();
+        for (Programa programa : programaRepository.findByProyecto_IdProyectoOrderByNumeroClaseAsc(idProyecto)) {
+            definiciones.put(programa.getIdClasePlataforma(), programa);
+        }
         List<DocenteProyecto> docentes = asociacionRepository
                 .findByProyecto_IdProyectoOrderByDocente_ApellidosAscDocente_NombresAsc(idProyecto);
         Map<String, DocenteProyecto> porUsuario = new HashMap<>();
@@ -183,309 +178,104 @@ public class TallerService {
         try {
             remotos = platformClient.obtenerTalleres(
                     proyecto.getNombre(), proyecto.getAnio(), proyecto.getEmpresa().getNombre());
-        } catch (Exception excepcion) {
+        } catch (Exception error) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "No se pudo consultar la plataforma educativa", excepcion);
+                    "No se pudieron consultar los talleres de la plataforma educativa", error);
         }
-        if (remotos == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuesta vacía de plataforma");
-        Set<String> identificadores = new HashSet<>();
+        if (remotos == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuesta de talleres vacía");
+        Set<String> idsTaller = new HashSet<>();
         Set<Long> docentesEnLote = new HashSet<>();
-        Set<Long> identificadoresClasesEnLote = new HashSet<>();
         for (PlatformTallerResponse remoto : remotos) {
-            validarRemoto(remoto, proyecto, porUsuario, identificadores, docentesEnLote,
-                    identificadoresClasesEnLote, plan.get().getCantidadClases());
-            Optional<Taller> existente = tallerRepository.findByIdTallerPlataforma(remoto.idTaller());
+            if (remoto == null || remoto.idTallerPlataforma() == null || remoto.idTallerPlataforma().isBlank()
+                    || !idsTaller.add(remoto.idTallerPlataforma()) || remoto.idTallerPlataforma().length() > 150
+                    || !proyecto.getNombre().equals(remoto.nombreProyecto())
+                    || !proyecto.getAnio().equals(remoto.anioProyecto())
+                    || !proyecto.getEmpresa().getNombre().equals(remoto.nombreEmpresa())
+                    || remoto.usuarioPlataforma() == null || remoto.clases() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Taller inválido o duplicado en la plataforma");
+            }
+            DocenteProyecto asignacion = porUsuario.get(remoto.usuarioPlataforma().trim().toLowerCase(Locale.ROOT));
+            if (asignacion == null) throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "El taller " + remoto.idTallerPlataforma() + " no tiene un docente asociado");
+            if (!docentesEnLote.add(asignacion.getDocente().getIdDocente()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Un docente tiene más de un taller");
+            if (remoto.clases().size() != definiciones.size()) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                        "El taller " + remoto.idTallerPlataforma() + " no contiene todas las clases del programa");
+            }
+            Set<Long> clasesRecibidas = new HashSet<>();
+            for (PlatformTallerResponse.ClasePlataforma clase : remoto.clases()) {
+                validarClase(clase, definiciones, clasesRecibidas);
+            }
+            Optional<Taller> existente = tallerRepository.findByIdTallerPlataforma(remoto.idTallerPlataforma());
             if (existente.isPresent() && !existente.get().getAsignacion().getProyecto().getIdProyecto().equals(idProyecto)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "El identificador del taller ya pertenece a otro proyecto");
-            }
-            // Validar todas las identidades antes de modificar cualquier clase del lote.
-            Map<Integer, ClaseTaller> clasesLocalesPorNumero = new HashMap<>();
-            if (existente.isPresent()) {
-                List<ClaseTaller> clasesLocales = claseRepository
-                        .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(remoto.idTaller());
-                for (ClaseTaller claseLocal : clasesLocales) {
-                    clasesLocalesPorNumero.put(claseLocal.getNumeroClase(), claseLocal);
-                }
-            }
-            for (PlatformTallerResponse.ClasePlataforma dato : remoto.clases()) {
-                Optional<ClaseTaller> porIdExterno = claseRepository.findByIdClasePlataforma(dato.idClasePlataforma());
-                if (porIdExterno.isPresent()) {
-                    ClaseTaller claseExistente = porIdExterno.get();
-                    if (!remoto.idTaller().equals(claseExistente.getTaller().getIdTallerPlataforma())
-                            || !dato.numeroClase().equals(claseExistente.getNumeroClase())) {
-                        throw new ResponseStatusException(HttpStatus.CONFLICT,
-                                "El identificador de clase ya pertenece a otra clase o taller");
-                    }
-                }
-                ClaseTaller clasePorNumero = clasesLocalesPorNumero.get(dato.numeroClase());
-                if (clasePorNumero != null && clasePorNumero.getIdClasePlataforma() != null
-                        && !clasePorNumero.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "La clase local ya tiene otro identificador externo");
-                }
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El identificador de taller pertenece a otro proyecto");
             }
         }
-        preguntasSincronizador.validarCatalogo(remotos);
         List<Taller> locales = tallerRepository.findByAsignacion_Proyecto_IdProyectoOrderByIdTallerPlataformaAsc(idProyecto);
-        for (Taller local : locales) {
-            if (!identificadores.contains(local.getIdTallerPlataforma())) {
-                local.marcarPendienteBaja();
-            }
-        }
-        Map<Long, Taller> localPorDocente = new HashMap<>();
-        if (!remotos.isEmpty()) {
-            for (Taller local : locales) {
-                localPorDocente.put(local.getAsignacion().getDocente().getIdDocente(), local);
+        for (Taller existente : locales) {
+            if (!idsTaller.contains(existente.getIdTallerPlataforma())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "La plataforma omitió el taller previamente sincronizado " + existente.getIdTallerPlataforma());
             }
         }
         OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
         for (PlatformTallerResponse remoto : remotos) {
             DocenteProyecto docente = porUsuario.get(remoto.usuarioPlataforma().trim().toLowerCase(Locale.ROOT));
-            Taller anteriorDocente = localPorDocente.get(docente.getDocente().getIdDocente());
-            if (anteriorDocente != null && !anteriorDocente.getIdTallerPlataforma().equals(remoto.idTaller())) {
-                // El docente tiene un nuevo taller remoto; primero se debe confirmar la baja local anterior.
-                // La interfaz muestra el anterior marcado pendiente y permite eliminar su copia.
-                continue;
-            }
-            Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(remoto.idTaller());
+            Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(remoto.idTallerPlataforma());
             Taller taller;
             if (encontrado.isPresent()) {
                 taller = encontrado.get();
                 taller.actualizar(docente);
             } else {
-                taller = tallerRepository.save(new Taller(remoto.idTaller(), docente));
+                taller = tallerRepository.save(new Taller(remoto.idTallerPlataforma(), docente));
             }
-            List<ClaseTaller> anteriores = claseRepository.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(remoto.idTaller());
-            Map<Integer, ClaseTaller> porNumero = new HashMap<>();
-            Set<Integer> numerosRecibidos = new HashSet<>();
-            for (ClaseTaller clase : anteriores) porNumero.put(clase.getNumeroClase(), clase);
+            List<ClaseTaller> anteriores = claseRepository
+                    .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(remoto.idTallerPlataforma());
+            Map<Long, ClaseTaller> clasesLocales = new HashMap<>();
+            for (ClaseTaller clase : anteriores) clasesLocales.put(clase.getPrograma().getIdPrograma(), clase);
             for (PlatformTallerResponse.ClasePlataforma dato : remoto.clases()) {
-                numerosRecibidos.add(dato.numeroClase());
-                ClaseTaller clase = porNumero.get(dato.numeroClase());
+                Programa programa = definiciones.get(dato.idClasePlataforma());
+                ClaseTaller clase = clasesLocales.get(programa.getIdPrograma());
+                EstadoClaseTaller estado = "Realizada".equals(dato.estado()) ?
+                        EstadoClaseTaller.REALIZADA : EstadoClaseTaller.PENDIENTE;
                 if (clase == null) {
-                    clase = new ClaseTaller(taller, dato.numeroClase(), dato.fechaRealizacion(),
-                            dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
+                    clase = new ClaseTaller(taller, programa, dato.fechaRealizacion(),
+                            dato.cantidadParticipantes(), dato.cantidadEvidencias(), estado, instante);
                 } else {
-                    if (clase.getIdClasePlataforma() != null
-                            && !clase.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
-                        throw new ResponseStatusException(HttpStatus.CONFLICT,
-                                "La clase local ya tiene otro identificador externo");
-                    }
-                    clase.actualizar(dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
+                    clase.actualizar(dato.fechaRealizacion(), dato.cantidadParticipantes(),
+                            dato.cantidadEvidencias(), estado, instante);
                 }
-                clase.asignarIdentificadorExterno(dato.idClasePlataforma());
                 claseRepository.save(clase);
             }
-            // Clases ausentes del lote: no conservar valores obsoletos.
-            for (ClaseTaller anterior : anteriores) {
-                // GET /proyecto puede omitir clases pendientes que sí figuran en GET /taller.
-                // Conservar sus nombres y módulos sincronizados previamente.
-                if (!numerosRecibidos.contains(anterior.getNumeroClase())
-                        && anterior.getIdClasePlataforma() == null) {
-                    claseRepository.delete(anterior);
-                }
-            }
+            taller.registrarSincronizacionClases();
         }
-        preguntasSincronizador.guardarCatalogo(proyecto, remotos);
         proyecto.registrarSincronizacionTalleres(remotos.size());
-        // Las bajas pendientes siguen contando como copias locales hasta ser confirmadas.
-        proyecto.actualizarEstadoPorTalleres(!locales.isEmpty() || !remotos.isEmpty());
+        proyecto.actualizarEstadoPorTalleres(!remotos.isEmpty());
         return remotos.size();
     }
 
-    /** Actualiza solo las clases de un taller mediante GET /taller, nunca mediante GET /proyecto. */
-    @Transactional
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
-    public int sincronizarClases(Long idProyecto, String idTaller, OidcUser usuarioGoogle) {
-        Proyecto proyecto = buscarProyecto(idProyecto);
-        verificarAcceso(proyecto, usuarioGoogle);
-        if (idTaller == null || idTaller.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El taller es obligatorio");
+    private void validarClase(PlatformTallerResponse.ClasePlataforma clase,
+            Map<Long, Programa> programa, Set<Long> recibidas) {
+        if (clase == null || clase.idClasePlataforma() == null || !recibidas.add(clase.idClasePlataforma())
+                || !programa.containsKey(clase.idClasePlataforma())
+                || clase.numeroClase() == null
+                || !clase.numeroClase().equals(programa.get(clase.idClasePlataforma()).getNumeroClase())
+                || clase.estado() == null || clase.cantidadParticipantes() == null
+                || clase.cantidadEvidencias() == null || clase.cantidadParticipantes() < 0
+                || clase.cantidadEvidencias() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Clase inválida o ajena al programa");
         }
-        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
-        if (encontrado.isEmpty() || !idProyecto.equals(
-                encontrado.get().getAsignacion().getProyecto().getIdProyecto())) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado en el proyecto");
-        }
-        Taller taller = encontrado.get();
-        if (taller.isPendienteBaja()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "No se pueden actualizar las clases de un taller pendiente de baja");
-        }
-        Optional<PlanificacionProyecto> plan = planificacionRepository.findByProyecto_IdProyecto(idProyecto);
-        if (plan.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El proyecto no tiene planificación");
-        }
-        int identificadorPlataforma;
-        try {
-            identificadorPlataforma = Integer.parseInt(idTaller);
-            if (identificadorPlataforma < 1) throw new NumberFormatException("Identificador no positivo");
-        } catch (NumberFormatException excepcion) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "El identificador del taller en la plataforma debe ser numérico", excepcion);
-        }
-        PlatformDetalleTallerResponse remoto;
-        try {
-            remoto = platformClient.obtenerDetalleTaller(identificadorPlataforma);
-        } catch (Exception excepcion) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "No se pudo consultar el detalle del taller en la plataforma educativa", excepcion);
-        }
-        if (remoto == null || remoto.idTaller() == null
-                || remoto.idTaller() != identificadorPlataforma || remoto.clases() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió el detalle de un taller diferente o incompleto");
-        }
-        // Validar la respuesta completa antes de realizar cualquier cambio en PostgreSQL.
-        Set<Integer> numerosRecibidos = new HashSet<>();
-        Set<Long> idsClases = new HashSet<>();
-        for (PlatformDetalleTallerResponse.ClaseDetallePlataforma clase : remoto.clases()) {
-            if (clase == null || clase.idClasePlataforma() == null || !idsClases.add(clase.idClasePlataforma())) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "Identificador de clase inválido o repetido");
-            }
-            validarDetalleClase(clase, plan.get().getCantidadClases(),
-                    taller.getAsignacion().getCantidadAlumnos(), numerosRecibidos);
-        }
-        List<ClaseTaller> anteriores = claseRepository
-                .findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller);
-        // La identidad externa es global: nunca puede corresponder a otro taller o número.
-        for (PlatformDetalleTallerResponse.ClaseDetallePlataforma dato : remoto.clases()) {
-            Optional<ClaseTaller> porIdExterno = claseRepository.findByIdClasePlataforma(dato.idClasePlataforma());
-            if (porIdExterno.isPresent()) {
-                ClaseTaller local = porIdExterno.get();
-                if (!local.getTaller().getIdTallerPlataforma().equals(idTaller)
-                        || !local.getNumeroClase().equals(dato.numeroClase())) {
-                    throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "El identificador externo de clase corresponde a otra clase");
-                }
-            }
-        }
-        OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
-        Map<Integer, ClaseTaller> porNumero = new HashMap<>();
-        for (ClaseTaller clase : anteriores) {
-            porNumero.put(clase.getNumeroClase(), clase);
-        }
-        for (PlatformDetalleTallerResponse.ClaseDetallePlataforma dato : remoto.clases()) {
-            ClaseTaller clase = porNumero.get(dato.numeroClase());
-            if (clase == null) {
-                int evidencias = dato.cantidadEvidencias() == null ? 0 : dato.cantidadEvidencias();
-                clase = new ClaseTaller(taller, dato.numeroClase(), dato.fechaRealizacion(),
-                        dato.cantidadParticipantes(), evidencias, instante);
-            }
-            EstadoClaseTaller estado = EstadoClaseTaller.PENDIENTE;
-            if ("Realizada".equals(dato.estadoClase())) estado = EstadoClaseTaller.REALIZADA;
-            if (clase.getIdClasePlataforma() != null && !clase.getIdClasePlataforma().equals(dato.idClasePlataforma())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "El número de clase ya tiene otro identificador externo");
-            }
-            clase.asignarIdentificadorExterno(dato.idClasePlataforma());
-            clase.actualizarDetalle(dato.nombreClase(), dato.nombreModulo(), estado,
-                    dato.fechaRealizacion(), dato.cantidadParticipantes(), dato.cantidadEvidencias(), instante);
-            claseRepository.save(clase);
-        }
-        // GET /taller no debe borrar clases que ya podrían tener evidencias asociadas.
-        taller.registrarSincronizacionClases();
-        return remoto.clases().size();
-    }
-
-    private void validarDetalleClase(PlatformDetalleTallerResponse.ClaseDetallePlataforma clase,
-            int cantidadClases, int cantidadAlumnos, Set<Integer> numerosRecibidos) {
-        if (clase == null || clase.idClasePlataforma() == null || clase.idClasePlataforma() <= 0
-                || clase.numeroClase() == null || clase.numeroClase() < 1
-                || clase.numeroClase() > cantidadClases || !numerosRecibidos.add(clase.numeroClase())
-                || clase.nombreClase() == null || clase.nombreClase().isBlank()
-                || clase.nombreClase().length() > 500
-                || clase.nombreModulo() == null || clase.nombreModulo().isBlank()
-                || clase.nombreModulo().length() > 500) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió una clase inválida o repetida");
-        }
-        if ("Realizada".equals(clase.estadoClase())) {
-            if (clase.fechaRealizacion() == null || clase.cantidadParticipantes() == null
-                    || clase.cantidadEvidencias() == null || clase.cantidadEvidencias() < 0
-                    || clase.cantidadParticipantes() < 0 || clase.cantidadParticipantes() > cantidadAlumnos) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "La plataforma devolvió una clase realizada con datos inválidos");
-            }
-        } else if ("Pendiente".equals(clase.estadoClase())) {
-            if (clase.fechaRealizacion() != null || clase.cantidadParticipantes() != null
-                    || clase.cantidadEvidencias() != null) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "La plataforma devolvió una clase pendiente con datos de realización");
-            }
+        if ("Realizada".equals(clase.estado())) {
+            if (clase.fechaRealizacion() == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "La clase realizada no tiene fecha");
+        } else if ("Pendiente".equals(clase.estado())) {
+            if (clase.fechaRealizacion() != null || clase.cantidadParticipantes() != 0
+                    || clase.cantidadEvidencias() != 0) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "La clase pendiente debe tener fecha nula y contadores cero");
         } else {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió un estado de clase desconocido");
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Estado de clase desconocido: " + clase.estado());
         }
-    }
-
-    private void validarRemoto(PlatformTallerResponse remoto, Proyecto proyecto,
-            Map<String, DocenteProyecto> docentes, Set<String> ids,
-            Set<Long> docentesEnLote, Set<Long> idsClasesEnLote, int cantidadClases) {
-        if (remoto == null || remoto.idTaller() == null || remoto.idTaller().isBlank()
-                || remoto.idTaller().length() > 150 || !ids.add(remoto.idTaller())) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió identificadores de talleres inválidos o repetidos");
-        }
-        // La plataforma selecciona los talleres mediante nombre, año y empresa.
-        // Comprobar el contrato antes de modificar las copias locales.
-        if (!proyecto.getNombre().equals(remoto.nombreProyecto())
-                || !proyecto.getAnio().equals(remoto.anioProyecto())
-                || !proyecto.getEmpresa().getNombre().equals(remoto.nombreEmpresa())) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió un taller que no corresponde al proyecto consultado");
-        }
-        String usuario = remoto.usuarioPlataforma() == null ? "" : remoto.usuarioPlataforma().trim().toLowerCase(Locale.ROOT);
-        DocenteProyecto asignacion = docentes.get(usuario);
-        if (asignacion == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "El taller " + remoto.idTaller() + " no tiene un usuario de plataforma registrado en el proyecto");
-        }
-        if (!docentesEnLote.add(asignacion.getDocente().getIdDocente())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Un docente tiene más de un taller en el mismo proyecto");
-        }
-        if (remoto.clases() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Clases no informadas para " + remoto.idTaller());
-        }
-        Set<Integer> numeros = new HashSet<>();
-        for (PlatformTallerResponse.ClasePlataforma clase : remoto.clases()) {
-            if (clase == null || clase.idClasePlataforma() == null || clase.idClasePlataforma() <= 0
-                    || !idsClasesEnLote.add(clase.idClasePlataforma())
-                    || clase.numeroClase() == null || clase.numeroClase() < 1
-                    || clase.numeroClase() > cantidadClases || !numeros.add(clase.numeroClase())
-                    || clase.cantidadEvidencias() == null || clase.cantidadEvidencias() < 0
-                    || (clase.fechaRealizacion() == null && (clase.cantidadEvidencias() > 0
-                    || clase.cantidadParticipantes() != null))
-                    || (clase.fechaRealizacion() != null && clase.cantidadParticipantes() == null)
-                    || (clase.cantidadParticipantes() != null && (clase.cantidadParticipantes() < 0
-                    || clase.cantidadParticipantes() > asignacion.getCantidadAlumnos()))) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Clase inválida del taller " + remoto.idTaller());
-            }
-        }
-    }
-
-    @Transactional
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
-    public void eliminarCopiaLocal(Long idProyecto, String idTaller, OidcUser usuarioGoogle) {
-        Proyecto proyecto = buscarProyecto(idProyecto);
-        verificarAcceso(proyecto, usuarioGoogle);
-        Optional<Taller> encontrado = tallerRepository.findByIdTallerPlataforma(idTaller);
-        if (encontrado.isEmpty() || !encontrado.get().getAsignacion().getProyecto().getIdProyecto().equals(idProyecto)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Taller no encontrado en el proyecto");
-        }
-        Taller taller = encontrado.get();
-        if (!taller.isPendienteBaja()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "El taller no fue marcado como ausente en la última sincronización");
-        }
-        claseRepository.deleteByTaller_IdTallerPlataforma(idTaller);
-        claseRepository.flush();
-        tallerRepository.delete(taller);
-        tallerRepository.flush();
-        proyecto.actualizarEstadoPorTalleres(tallerRepository.existsByAsignacion_Proyecto_IdProyecto(idProyecto));
     }
 
     /** Garantiza los permisos institucionales y la pertenencia del taller al proyecto. */
