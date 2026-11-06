@@ -1,0 +1,74 @@
+[
+  {
+    "idTallerPlataforma": 8,
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 101,
+    "respuesta": "Sí, pude adaptarme a la plataforma."
+  },
+  {
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 102,
+    "respuesta": "Todos comprendieron observando el video.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 103,
+    "respuesta": "Sí, todos.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 104,
+    "respuesta": "Muy bien de manera responsable.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 105,
+    "respuesta": "Sí, la mayoría.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 7,
+    "idPreguntaPlataforma": 106,
+    "respuesta": "Muy bien, participativa y ayuda mutua con algunas recomendaciones.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 8,
+    "idPreguntaPlataforma": 107,
+    "respuesta": "La clase fue emocionante, resultaron muy positivos tener los materiales, les gustó mucho.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 8,
+    "idPreguntaPlataforma": 108,
+    "respuesta": "Durante el taller todos trabajaron, se ayudan, eligen qué material usar y lo utilizan con responsabilidad.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 9,
+    "idPreguntaPlataforma": 109,
+    "respuesta": "Una clase divertida haciendo retratos.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 9,
+    "idPreguntaPlataforma": 110,
+    "respuesta": "Cada vez van afianzándose en el trabajo presentado, les gusta dibujar, crear y aprender.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 10,
+    "idPreguntaPlataforma": 111,
+    "respuesta": "Clase interesante, resultaron positivos la imaginación y la creatividad.",
+    "idTallerPlataforma": 8
+  },
+  {
+    "idClasePlataforma": 11,
+    "idPreguntaPlataforma": 113,
+    "respuesta": "Plasmaron su imaginación a través del dibujo y les ayudó a su lectoescritura.",
+    "idTallerPlataforma": 8
+  }
+]

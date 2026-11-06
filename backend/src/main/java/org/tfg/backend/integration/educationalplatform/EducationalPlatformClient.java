@@ -67,6 +67,17 @@ public class EducationalPlatformClient {
         return detalle;
     }
 
+    public PlatformEncuestasResponse obtenerEncuestas(int idTallerPlataforma) {
+        PlatformEncuestasResponse respuesta = restClient.get()
+                .uri("/encuestas?id_taller_plataforma={idTallerPlataforma}", idTallerPlataforma)
+                .retrieve()
+                .body(PlatformEncuestasResponse.class);
+        if (respuesta == null) {
+            throw new IllegalStateException("La plataforma no devolvió las encuestas");
+        }
+        return respuesta;
+    }
+
     public PlatformEvidenciasResponse obtenerEvidencias(int idTallerPlataforma) {
         PlatformEvidenciasResponse respuesta = restClient.get()
                 .uri("/evidencias?id_taller_plataforma={idTallerPlataforma}", idTallerPlataforma)

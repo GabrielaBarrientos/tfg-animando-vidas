@@ -42,6 +42,15 @@ public class Taller {
     @Column(name = "ultima_sincronizacion_evidencias")
     private OffsetDateTime ultimaSincronizacionEvidencias;
 
+    @Column(name = "ultima_sincronizacion_encuestas")
+    private OffsetDateTime ultimaSincronizacionEncuestas;
+
+    public OffsetDateTime getUltimaSincronizacionEncuestas() { return ultimaSincronizacionEncuestas; }
+
+    public void registrarSincronizacionEncuestas(OffsetDateTime instante) {
+        ultimaSincronizacionEncuestas = instante;
+    }
+
     protected Taller() { }
     public Taller(String identificador, DocenteProyecto asignacion) {
         idTallerPlataforma = identificador;

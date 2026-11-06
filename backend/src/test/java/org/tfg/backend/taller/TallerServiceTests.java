@@ -52,7 +52,7 @@ class TallerServiceTests {
         seguimientos = mock(ConfiguracionSeguimientoRepository.class);
         plataforma = mock(EducationalPlatformClient.class);
         servicio = new TallerService(proyectos, usuarios, asociaciones, talleres, clases, planes,
-                seguimientos, plataforma, new TallerSeguimientoCalculador());
+                seguimientos, plataforma, new TallerSeguimientoCalculador(), mock(org.tfg.backend.encuesta.PreguntasProyectoSincronizador.class));
         google = mock(OidcUser.class);
         usuario = mock(Usuario.class);
         proyecto = mock(Proyecto.class);
