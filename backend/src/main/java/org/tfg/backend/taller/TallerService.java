@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import org.tfg.backend.encuesta.PreguntasProyectoSincronizador;
 import org.tfg.backend.docente.DocenteProyecto;
 import org.tfg.backend.docente.DocenteProyectoRepository;
 import org.tfg.backend.integration.educationalplatform.EducationalPlatformClient;
@@ -44,12 +45,14 @@ public class TallerService {
     private final ConfiguracionSeguimientoRepository seguimientoRepository;
     private final EducationalPlatformClient platformClient;
     private final TallerSeguimientoCalculador calculador;
+    private final PreguntasProyectoSincronizador preguntasSincronizador;
 
     public TallerService(ProyectoRepository proyectoRepository, UsuarioRepository usuarioRepository,
             DocenteProyectoRepository asociacionRepository, TallerRepository tallerRepository,
             ClaseTallerRepository claseRepository, PlanificacionProyectoRepository planificacionRepository,
             ConfiguracionSeguimientoRepository seguimientoRepository,
-            EducationalPlatformClient platformClient, TallerSeguimientoCalculador calculador) {
+            EducationalPlatformClient platformClient, TallerSeguimientoCalculador calculador,
+            PreguntasProyectoSincronizador preguntasSincronizador) {
         this.proyectoRepository = proyectoRepository;
         this.usuarioRepository = usuarioRepository;
         this.asociacionRepository = asociacionRepository;
@@ -59,6 +62,7 @@ public class TallerService {
         this.seguimientoRepository = seguimientoRepository;
         this.platformClient = platformClient;
         this.calculador = calculador;
+        this.preguntasSincronizador = preguntasSincronizador;
     }
 
     @Transactional(readOnly = true)
@@ -222,6 +226,7 @@ public class TallerService {
                 }
             }
         }
+        preguntasSincronizador.validarCatalogo(remotos);
         List<Taller> locales = tallerRepository.findByAsignacion_Proyecto_IdProyectoOrderByIdTallerPlataformaAsc(idProyecto);
         for (Taller local : locales) {
             if (!identificadores.contains(local.getIdTallerPlataforma())) {
@@ -282,6 +287,7 @@ public class TallerService {
                 }
             }
         }
+        preguntasSincronizador.guardarCatalogo(proyecto, remotos);
         proyecto.registrarSincronizacionTalleres(remotos.size());
         // Las bajas pendientes siguen contando como copias locales hasta ser confirmadas.
         proyecto.actualizarEstadoPorTalleres(!locales.isEmpty() || !remotos.isEmpty());

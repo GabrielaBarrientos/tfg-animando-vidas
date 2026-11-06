@@ -26,6 +26,7 @@ def taller(id_taller="av-001", proyecto="Una noche en el prado", anio=2026,
                 "fechaRealizacion": "2026-09-05",
                 "cantidadParticipantes": 12,
                 "cantidadEvidencias": 1,
+                "preguntas": [],
             },
         ],
     }
@@ -157,7 +158,7 @@ def test_respuesta_real_del_ejemplo_contiene_ids_de_clases(tmp_path, monkeypatch
     talleres = respuesta.json()
     assert len(talleres) == 1
     assert talleres[0]["idTaller"] == "8"
-    assert [clase["idClasePlataforma"] for clase in talleres[0]["clases"]] == list(range(7, 16))
+    assert [clase["idClasePlataforma"] for clase in talleres[0]["clases"]] == list(range(7, 17))
 
 
 def test_rechaza_numero_clase_duplicado(tmp_path, monkeypatch):

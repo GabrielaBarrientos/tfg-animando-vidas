@@ -6,12 +6,13 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.responses import FileResponse
 from enum import Enum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 app = FastAPI(title="API simulada - Animando Vidas")
 DATOS = Path(__file__).parent / "talleres.json"
 DETALLES = Path(__file__).parent / "detalle_talleres.json"
 EVIDENCIAS = Path(__file__).parent / "evidencias.json"
+ENCUESTAS = Path(__file__).parent / "encuestas.json"
 ARCHIVOS = Path(__file__).parent / "archivos"
 
 
@@ -21,6 +22,7 @@ class ClasePlataforma(BaseModel):
     fechaRealizacion: date | None = None
     cantidadParticipantes: int | None = Field(default=None, ge=0)
     cantidadEvidencias: int = Field(default=0, ge=0)
+    preguntas: list["PreguntaProyectoPlataforma"]
 
     @model_validator(mode="after")
     def validar(self):
@@ -31,7 +33,23 @@ class ClasePlataforma(BaseModel):
         return self
 
 
+class PreguntaProyectoPlataforma(BaseModel):
+    idPreguntaPlataforma: int = Field(ge=1)
+    enunciado: str = Field(min_length=1, max_length=10000)
+    tipo: str
+    orden: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def validar_tipo(self):
+        if self.tipo not in ("introducción", "clase"):
+            raise ValueError("Tipo de pregunta desconocido")
+        if not self.enunciado.strip():
+            raise ValueError("El enunciado no puede estar vacío")
+        return self
+
+
 class TallerPlataforma(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     idTaller: str = Field(min_length=1, max_length=150)
     nombreProyecto: str = Field(min_length=1)
     anioProyecto: int = Field(ge=1)
@@ -59,6 +77,7 @@ def obtener_talleres(
 
         coincidencias = []
         identificadores_clases = set()
+        catalogo_referencia = None
         for dato in datos:
             if not isinstance(dato, dict):
                 raise ValueError("Cada taller debe ser un objeto")
@@ -67,6 +86,8 @@ def obtener_talleres(
                     and dato.get("nombreEmpresa") == nombreEmpresa):
                 taller = TallerPlataforma.model_validate(dato)
                 numeros_clase = set()
+                identificadores_preguntas = set()
+                preguntas_por_clase = {}
                 for clase in taller.clases:
                     if clase.idClasePlataforma in identificadores_clases:
                         raise ValueError("Identificador externo de clase repetido en el proyecto")
@@ -74,6 +95,25 @@ def obtener_talleres(
                         raise ValueError("Número de clase repetido en un taller")
                     identificadores_clases.add(clase.idClasePlataforma)
                     numeros_clase.add(clase.numeroClase)
+                    preguntas_clase = {}
+                    ordenes = set()
+                    for pregunta in clase.preguntas:
+                        if pregunta.idPreguntaPlataforma in identificadores_preguntas:
+                            raise ValueError("Cada pregunta debe tener su propio identificador por clase")
+                        if pregunta.orden in ordenes:
+                            raise ValueError("Dos preguntas de una clase comparten orden")
+                        identificadores_preguntas.add(pregunta.idPreguntaPlataforma)
+                        ordenes.add(pregunta.orden)
+                        preguntas_clase[pregunta.idPreguntaPlataforma] = (
+                            pregunta.enunciado, pregunta.tipo, pregunta.orden
+                        )
+                    if ordenes != set(range(1, len(clase.preguntas) + 1)):
+                        raise ValueError("El orden de cada clase debe ser 1, 2, 3, ...")
+                    preguntas_por_clase[clase.numeroClase] = preguntas_clase
+                if catalogo_referencia is None:
+                    catalogo_referencia = preguntas_por_clase
+                elif preguntas_por_clase != catalogo_referencia:
+                    raise ValueError("Cada clase debe compartir las mismas preguntas entre talleres")
                 coincidencias.append(taller)
         return coincidencias
     except (OSError, ValueError) as error:
@@ -213,3 +253,39 @@ def descargar_archivo_plataforma(id_archivo_plataforma: int):
                 content_disposition_type="inline",
             )
     raise HTTPException(status_code=404, detail="Archivo inexistente")
+
+
+# Respuestas de encuestas por clase: las preguntas se obtienen de GET /proyecto.
+class RespuestaEncuestaPlataforma(BaseModel):
+    idTallerPlataforma: int = Field(ge=1)
+    idClasePlataforma: int = Field(ge=1)
+    idPreguntaPlataforma: int = Field(ge=1)
+    respuesta: str = Field(min_length=1, max_length=20000)
+
+
+class EncuestasPlataforma(BaseModel):
+    idTallerPlataforma: int = Field(ge=1)
+    respuestas: list[RespuestaEncuestaPlataforma]
+
+
+@app.get("/encuestas", response_model=EncuestasPlataforma)
+def consultar_encuestas(id_taller_plataforma: int = Query(ge=1)):
+    try:
+        datos = json.loads(ENCUESTAS.read_text(encoding="utf-8"))
+        if not isinstance(datos, list):
+            raise ValueError("Las encuestas simuladas deben ser una lista")
+        respuestas = []
+        combinaciones = set()
+        for dato in datos:
+            if not isinstance(dato, dict):
+                raise ValueError("Respuesta de encuesta inválida")
+            if dato.get("idTallerPlataforma") == id_taller_plataforma:
+                respuesta = RespuestaEncuestaPlataforma.model_validate(dato)
+                clave = (respuesta.idClasePlataforma, respuesta.idPreguntaPlataforma)
+                if clave in combinaciones:
+                    raise ValueError("La misma pregunta está respondida dos veces en una clase")
+                combinaciones.add(clave)
+                respuestas.append(respuesta)
+        return EncuestasPlataforma(idTallerPlataforma=id_taller_plataforma, respuestas=respuestas)
+    except (OSError, ValueError) as excepcion:
+        raise HTTPException(status_code=500, detail=f"Encuestas simuladas inválidas: {excepcion}") from excepcion

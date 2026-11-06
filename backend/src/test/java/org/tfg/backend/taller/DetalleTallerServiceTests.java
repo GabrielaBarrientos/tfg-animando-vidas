@@ -51,7 +51,7 @@ class DetalleTallerServiceTests {
         plataforma = mock(EducationalPlatformClient.class);
         servicio = new TallerService(proyectos, usuarios, mock(DocenteProyectoRepository.class),
                 talleres, clases, planificaciones, seguimientos, plataforma,
-                new TallerSeguimientoCalculador());
+                new TallerSeguimientoCalculador(), mock(org.tfg.backend.encuesta.PreguntasProyectoSincronizador.class));
 
         proyecto = mock(Proyecto.class);
         when(proyectos.findById(20L)).thenReturn(Optional.of(proyecto));

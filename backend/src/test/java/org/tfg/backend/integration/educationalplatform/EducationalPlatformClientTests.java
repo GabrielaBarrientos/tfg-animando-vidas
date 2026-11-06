@@ -35,10 +35,17 @@ class EducationalPlatformClientTests {
                           "nombreEmpresa": "Fundación Prosegur",
                           "usuarioPlataforma": "lara.kon",
                           "clases": [{
+                            "idClasePlataforma": 7,
                             "numeroClase": 1,
                             "fechaRealizacion": "2026-07-12",
                             "cantidadParticipantes": 20,
-                            "cantidadEvidencias": 2
+                            "cantidadEvidencias": 2,
+                            "preguntas": [{
+                              "idPreguntaPlataforma": 101,
+                              "enunciado": "¿Cómo resultó la clase?",
+                              "tipo": "clase",
+                              "orden": 1
+                            }]
                           }]
                         }]
                         """,
@@ -52,6 +59,12 @@ class EducationalPlatformClientTests {
         assertEquals("lara.kon", talleres.get(0).usuarioPlataforma());
         assertEquals(2026, talleres.get(0).anioProyecto().intValue());
         assertEquals(20, talleres.get(0).clases().get(0).cantidadParticipantes());
+        assertEquals(7L, talleres.get(0).clases().get(0).idClasePlataforma());
+        assertEquals(1, talleres.get(0).clases().get(0).preguntas().size());
+        assertEquals(101L, talleres.get(0).clases().get(0).preguntas().get(0).idPreguntaPlataforma());
+        assertEquals("¿Cómo resultó la clase?", talleres.get(0).clases().get(0).preguntas().get(0).enunciado());
+        assertEquals("clase", talleres.get(0).clases().get(0).preguntas().get(0).tipo());
+        assertEquals(1, talleres.get(0).clases().get(0).preguntas().get(0).orden());
         mockServer.verify();
     }
 
@@ -137,5 +150,32 @@ class EducationalPlatformClientTests {
         assertEquals("api-simulada", response.service());
 
         mockServer.verify();
+    }
+
+    @Test
+    void obtieneRespuestasConLosTresIdentificadoresExternos() {
+        RestClient.Builder builder = RestClient.builder();
+        MockRestServiceServer servidor = MockRestServiceServer.bindTo(builder).build();
+        EducationalPlatformClient cliente = new EducationalPlatformClient(builder, "http://127.0.0.1:8000");
+        servidor.expect(requestTo("http://127.0.0.1:8000/encuestas?id_taller_plataforma=8"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("""
+                        {
+                          "idTallerPlataforma": 8,
+                          "respuestas": [{
+                            "idTallerPlataforma": 8,
+                            "idClasePlataforma": 7,
+                            "idPreguntaPlataforma": 102,
+                            "respuesta": "Todos comprendieron observando el video."
+                          }]
+                        }
+                        """, MediaType.APPLICATION_JSON));
+
+        PlatformEncuestasResponse datos = cliente.obtenerEncuestas(8);
+        assertEquals(8, datos.idTallerPlataforma().intValue());
+        assertEquals(8, datos.respuestas().get(0).idTallerPlataforma().intValue());
+        assertEquals(7L, datos.respuestas().get(0).idClasePlataforma().longValue());
+        assertEquals(102L, datos.respuestas().get(0).idPreguntaPlataforma().longValue());
+        servidor.verify();
     }
 }

@@ -11,6 +11,7 @@ import { obtenerDetalleTaller, sincronizarClasesTaller, type ClaseDetalle, type 
 import { SesionExpiradaError } from '../services/erroresApi';
 import { colores } from '../theme';
 import EvidenciasTaller from '../components/EvidenciasTaller';
+import EncuestasTaller from '../components/EncuestasTaller';
 
 type SolapaTaller = 'resumen' | 'evidencias' | 'encuestas' | 'comunicaciones';
 
@@ -286,10 +287,13 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
               clases={detalle.clases} puedeEditar={puedeActualizar}
               onSesionExpirada={onSesionExpirada} />
           )}
-          {(solapa === 'encuestas' || solapa === 'comunicaciones') && (
+          {solapa === 'encuestas' && (
+            <EncuestasTaller idProyecto={proyecto.idProyecto} idTaller={idTaller}
+              puedeActualizar={puedeActualizar} onSesionExpirada={onSesionExpirada} />
+          )}
+          {solapa === 'comunicaciones' && (
             <Alert severity="info" sx={{ mt: 2 }}>
-              {solapa === 'encuestas' && 'La consulta de encuestas se incorporará en el incremento de la Pantalla 14.'}
-              {solapa === 'comunicaciones' && 'El seguimiento de comunicaciones se incorporará en un incremento posterior.'}
+              El seguimiento de comunicaciones se incorporará en un incremento posterior.
             </Alert>
           )}
         </>
