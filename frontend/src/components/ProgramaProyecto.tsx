@@ -4,6 +4,7 @@ import {
   CircularProgress, Paper, Snackbar, Tooltip, Typography
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { colores } from '../theme';
 import { consultarPrograma, actualizarPrograma, type ProgramaProyecto as ProgramaDatos } from '../services/programaApi';
 import { SesionExpiradaError } from '../services/erroresApi';
@@ -96,7 +97,7 @@ export default function ProgramaProyecto({ idProyecto, puedeActualizar, onSesion
 
   return (
     <Paper elevation={1} sx={{ borderRadius: 1, minWidth: 0, overflow: 'hidden' }}>
-      <Box sx={{ px: 2, py: 2.25, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+      <Box sx={{ px: 2, pt: '8px', pb: 2.25, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
         <Box sx={{ flex: '1 1 320px', minWidth: 0 }}>
           <Typography variant="h6" component="h2" sx={{ fontSize: 20 }}>Programa del proyecto</Typography>
           <Typography variant="body2" color="text.secondary">
@@ -108,7 +109,8 @@ export default function ProgramaProyecto({ idProyecto, puedeActualizar, onSesion
           <Typography variant="body2">{fechaLocal(programa?.ultimaSincronizacion ?? null)}</Typography>
         </Box>
         {puedeActualizar && (
-          <Button variant="outlined" onClick={actualizar} disabled={actualizando || cargando}>
+          <Button variant="outlined" startIcon={<RefreshIcon />} onClick={actualizar}
+            disabled={actualizando || cargando}>
             {actualizando ? 'ACTUALIZANDO...' : 'ACTUALIZAR PROGRAMA'}
           </Button>
         )}

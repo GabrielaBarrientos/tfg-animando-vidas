@@ -38,11 +38,7 @@ Cada funcionalidad comprende análisis, diseño técnico, implementación, integ
 
 En desarrollo.
 
-Se encuentran implementadas las funcionalidades de gestión de proyectos,
-planificación, configuración de seguimiento, gestión de docentes,
-sincronización de talleres, consulta de clases, evidencias y encuestas.
-
-La refactorización V11 fue implementada y validada mediante pruebas
-técnicas y funcionales.
+Se encuentran implementadas las funcionalidades de gestión de proyectos, planificación, configuración de seguimiento,
+gestión de docentes, sincronización de talleres, consulta de clases, evidencias, encuestas y gestión de comunicaciones con docentes.
 
 Las funcionalidades restantes se desarrollarán en los próximos incrementos.

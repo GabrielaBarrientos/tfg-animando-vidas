@@ -1,5 +1,6 @@
 import type { ChangeEvent, ReactElement } from 'react';
-import { Box, Button, MenuItem, TextField, Tooltip, Typography } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import { Box, Button, MenuItem, TextField, Typography } from '@mui/material';
 import type { ClaseDetalle } from '../services/detalleTallerApi';
 
 interface BarraEvidenciasProps {
@@ -10,6 +11,7 @@ interface BarraEvidenciasProps {
   actualizando: boolean;
   onCambiarFiltro: (valor: string) => void;
   onActualizar: () => void;
+  onRegistrarComunicacion?: () => void;
 }
 
 function mostrarFechaHora(valor: string | null): string {
@@ -28,7 +30,7 @@ function mostrarFechaHora(valor: string | null): string {
 }
 
 export default function BarraEvidencias({ clases, filtro, ultimaSincronizacion, puedeEditar,
-  actualizando, onCambiarFiltro, onActualizar }: BarraEvidenciasProps) {
+  actualizando, onCambiarFiltro, onActualizar, onRegistrarComunicacion }: BarraEvidenciasProps) {
   function cambiarFiltro(evento: ChangeEvent<HTMLInputElement>): void {
     onCambiarFiltro(evento.target.value);
   }
@@ -70,13 +72,14 @@ export default function BarraEvidencias({ clases, filtro, ultimaSincronizacion, 
           </Typography>
         </Box>
         {puedeEditar && (
-          <Button variant="outlined" disabled={actualizando} onClick={onActualizar}>
+          <Button variant="outlined" startIcon={<RefreshIcon />}
+            disabled={actualizando} onClick={onActualizar}>
             {actualizando ? 'Actualizando...' : 'ACTUALIZAR EVIDENCIAS'}
           </Button>
         )}
-        <Tooltip title="Disponible en el incremento de comunicaciones">
-          <span><Button variant="outlined" disabled>REGISTRAR COMUNICACIÓN</Button></span>
-        </Tooltip>
+        {puedeEditar && onRegistrarComunicacion && (
+          <Button variant="outlined" onClick={onRegistrarComunicacion}>REGISTRAR COMUNICACIÓN</Button>
+        )}
       </Box>
     </Box>
   );

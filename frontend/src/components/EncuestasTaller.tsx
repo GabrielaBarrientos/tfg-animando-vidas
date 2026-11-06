@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ChangeEvent, ReactElement } from 'react';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {
   Alert, Box, Button, CircularProgress, MenuItem, Snackbar, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow, TextField,
@@ -166,7 +167,7 @@ export default function EncuestasTaller({ idProyecto, idTaller, puedeActualizar,
 
   return (
     <Box sx={{ width: '100%', minWidth: 0 }}>
-      <Box sx={{ borderBottom: '1px solid #DCE3E9', px: 2, py: 1.5 }}>
+      <Box sx={{ px: 2, pt: '8px', pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400 }}>Preguntas y respuestas</Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2,
@@ -189,7 +190,8 @@ export default function EncuestasTaller({ idProyecto, idTaller, puedeActualizar,
             </Typography>
           </Box>
           {puedeActualizar && (
-            <Button variant="outlined" disabled={actualizando} onClick={actualizarRespuestas}>
+            <Button variant="outlined" startIcon={<RefreshIcon />}
+              disabled={actualizando} onClick={actualizarRespuestas}>
               {actualizando ? 'Actualizando...' : 'ACTUALIZAR RESPUESTAS'}
             </Button>
           )}
