@@ -111,6 +111,7 @@ class ConfiguracionSeguimientoServiceTests {
                 proyecto.getIdProyecto(), solicitud(usuario.getIdUsuario()));
 
         assertNotNull(respuesta.idConfiguracionSeguimiento());
+        assertTrue(respuesta.configurada());
         assertEquals(EstadoProyecto.PLANIFICADO, respuesta.estadoProyecto());
         assertEquals(2, respuesta.umbralProximoAtrasoSemanas());
         assertEquals(3, respuesta.umbralAtrasoSemanas());
@@ -257,11 +258,31 @@ class ConfiguracionSeguimientoServiceTests {
 
     @Test
     @WithMockUser(roles = "ADMINISTRADOR")
-    void consultaInexistenteRespondeNotFound() {
+    void consultaSinConfiguracionDevuelvePendienteSinCrearRegistro() {
         Proyecto proyecto = crearProyecto(true);
+
+        ConfiguracionSeguimientoResponse respuesta = seguimientoService.obtener(proyecto.getIdProyecto());
+
+        assertFalse(respuesta.configurada());
+        assertEquals(proyecto.getIdProyecto(), respuesta.idProyecto());
+        assertNull(respuesta.idConfiguracionSeguimiento());
+        assertNull(respuesta.umbralProximoAtrasoSemanas());
+        assertNull(respuesta.umbralAtrasoSemanas());
+        assertNull(respuesta.idResponsableSeguimiento());
+        assertNull(respuesta.diaInformeSemanal());
+        assertNull(respuesta.idResponsableProyecto());
+        assertNull(respuesta.tipoDiaInformeMensual());
+        assertNull(respuesta.diaInformeMensual());
+        assertEquals(proyecto.getEstado(), respuesta.estadoProyecto());
+        assertTrue(seguimientoRepository.findByProyecto_IdProyecto(proyecto.getIdProyecto()).isEmpty());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRADOR")
+    void consultaProyectoInexistenteRespondeNotFound() {
         try {
-            seguimientoService.obtener(proyecto.getIdProyecto());
-            fail("Se esperaba que la configuración no existiera");
+            seguimientoService.obtener(-1L);
+            fail("Se esperaba 404 para un proyecto inexistente");
         } catch (ResponseStatusException excepcion) {
             assertEquals(HttpStatus.NOT_FOUND, excepcion.getStatusCode());
         }

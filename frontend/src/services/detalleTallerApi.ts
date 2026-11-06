@@ -1,6 +1,5 @@
-import { obtenerTokenCsrf } from './csrfApi';
 import { verificarSesionEnRespuesta } from './erroresApi';
-import type { EstadoEvidencias, EstadoTaller } from './talleresApi';
+import { sincronizarTalleres, type EstadoEvidencias, type EstadoTaller } from './talleresApi';
 
 export type EstadoClase = 'REALIZADA' | 'PENDIENTE';
 
@@ -73,20 +72,7 @@ async function ejecutarConsulta(idProyecto: number, idTaller: string): Promise<D
 }
 
 
-/** Solicita exclusivamente las clases del taller indicado, sin sincronizar el proyecto completo. */
-export async function sincronizarClasesTaller(idProyecto: number, idTaller: string): Promise<number> {
-  const csrf = await obtenerTokenCsrf();
-  const cabeceras = new Headers();
-  cabeceras.set(csrf.headerName, csrf.token);
-  const respuesta = await fetch(
-    `/api/proyectos/${idProyecto}/talleres/${encodeURIComponent(idTaller)}/clases/sincronizar`,
-    { method: 'POST', credentials: 'include', headers: cabeceras }
-  );
-  await verificarSesionEnRespuesta(respuesta);
-  if (respuesta.status === 403) throw new Error('No tenés permiso para actualizar las clases.');
-  if (respuesta.status === 404) throw new Error('El taller ya no existe en este proyecto.');
-  if (respuesta.status === 409) throw new Error('No se pueden actualizar las clases de este taller.');
-  if (!respuesta.ok) throw new Error('No se pudo conectar con la plataforma educativa.');
-  const datos: { cantidadClases: number } = await respuesta.json();
-  return datos.cantidadClases;
+/** GET /taller fue eliminado. La actualización de clases sincroniza todos los talleres del proyecto. */
+export async function sincronizarClasesTaller(idProyecto: number): Promise<number> {
+  return sincronizarTalleres(idProyecto);
 }

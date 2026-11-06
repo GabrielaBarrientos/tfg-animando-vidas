@@ -3,8 +3,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import CloseIcon from '@mui/icons-material/Close';
 import {
-  Alert, Box, Breadcrumbs, Button, Chip, CircularProgress, Dialog, DialogActions,
-  DialogContent, DialogContentText, DialogTitle, IconButton, InputAdornment, Link, MenuItem,
+  Alert, Box, Breadcrumbs, Button, Chip, CircularProgress,
+  IconButton, InputAdornment, Link, MenuItem,
   Paper, Snackbar, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   TextField, Typography
 } from '@mui/material';
@@ -13,7 +13,7 @@ import type { Proyecto } from '../services/proyectosApi';
 import { SesionExpiradaError } from '../services/erroresApi';
 import {
   listarTalleres, sincronizarTalleres, esperarSincronizacionEnCurso,
-  eliminarCopiaLocalTaller, obtenerMetadatosTalleres,
+  obtenerMetadatosTalleres,
   type TallerResumen, type TalleresMetadatos, type EstadoTaller, type EstadoEvidencias
 } from '../services/talleresApi';
 import { colores } from '../theme';
@@ -120,14 +120,6 @@ function textoAvance(cantidad: number): string {
   return cantidad === 0 ? 'No iniciado' : `${cantidad} clases`;
 }
 
-function buscarBajaPendiente(datos: TallerResumen[], puedeActualizar: boolean): TallerResumen | null {
-  if (!puedeActualizar) return null;
-  for (const taller of datos) {
-    if (taller.pendienteBaja) return taller;
-  }
-  return null;
-}
-
 export default function TalleresProyectoPage({ proyecto, puedeActualizar,
   onVolverAlListado, onVolverAlDetalle, onSeleccionarSolapa, onVerTaller,
   onSesionExpirada }: TalleresProyectoPageProps) {
@@ -139,7 +131,6 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState(false);
   const [notificacion, setNotificacion] = useState<Notificacion | null>(null);
-  const [bajaSeleccionada, setBajaSeleccionada] = useState<TallerResumen | null>(null);
 
   // La Pantalla 7 inicia la sincronización automática. Aquí solo se consulta
   // PostgreSQL. Si el usuario navega antes de que termine la sincronización,
@@ -164,7 +155,6 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
         if (activo) {
           setTalleres(datos);
           setMetadatos(resumen);
-          setBajaSeleccionada(buscarBajaPendiente(datos, puedeActualizar));
           if (advertencia !== '') setNotificacion({ tipo: 'error', texto: advertencia });
         }
       } catch (excepcion) {
@@ -190,31 +180,10 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
       const resumen = await obtenerMetadatosTalleres(proyecto.idProyecto);
       setTalleres(datos);
       setMetadatos(resumen);
-      setBajaSeleccionada(buscarBajaPendiente(datos, puedeActualizar));
       setNotificacion({ tipo: 'success', texto: `Sincronización completada: ${cantidad} talleres recibidos.` });
     } catch (excepcion) {
       if (excepcion instanceof SesionExpiradaError) onSesionExpirada();
       else setNotificacion({ tipo: 'error', texto: excepcion instanceof Error ? excepcion.message : 'Error al actualizar talleres.' });
-    } finally {
-      setActualizando(false);
-    }
-  }
-
-  async function confirmarBaja() {
-    if (bajaSeleccionada === null) return;
-    setActualizando(true);
-    setNotificacion(null);
-    try {
-      await eliminarCopiaLocalTaller(proyecto.idProyecto, bajaSeleccionada.idTaller);
-      const datos = await listarTalleres(proyecto.idProyecto);
-      const resumen = await obtenerMetadatosTalleres(proyecto.idProyecto);
-      setTalleres(datos);
-      setMetadatos(resumen);
-      setBajaSeleccionada(buscarBajaPendiente(datos, puedeActualizar));
-      setNotificacion({ tipo: 'success', texto: 'Se eliminó la copia local del taller seleccionado.' });
-    } catch (excepcion) {
-      if (excepcion instanceof SesionExpiradaError) onSesionExpirada();
-      else setNotificacion({ tipo: 'error', texto: excepcion instanceof Error ? excepcion.message : 'No se pudo eliminar la copia local.' });
     } finally {
       setActualizando(false);
     }
@@ -241,9 +210,7 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
   let proximosAtraso = 0;
   let atrasados = 0;
   let noIniciados = 0;
-  let hayBajasPendientes = false;
   for (const taller of talleres) {
-    if (taller.pendienteBaja) hayBajasPendientes = true;
     // Los indicadores se calculan sobre los talleres vigentes de la plataforma.
     if (!taller.pendienteBaja) {
       if (taller.estado === 'EN_PLAZO') enPlazo++;
@@ -290,15 +257,6 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
         display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <ProyectoTabs valor="talleres" onCambiar={onSeleccionarSolapa} />
         <Box sx={{ padding: '12px 24px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {puedeActualizar && hayBajasPendientes && (
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              Hay talleres que ya no aparecen en la plataforma. Revisá su información antes de eliminar la copia local.
-              <Button type="button" onClick={function revisar() { setBajaSeleccionada(buscarBajaPendiente(talleres, puedeActualizar)); }}>
-                Revisar bajas
-              </Button>
-            </Alert>
-          )}
-
           {/* Indicadores con medidas, colores y tipografía de Figma, sin Paper exterior. */}
           <Box sx={{ mb: 1, px: 1, py: 1, overflowX: 'auto' }}>
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 200px)',
@@ -393,8 +351,7 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
                         }} sx={{ cursor: 'pointer' }}>
                         <TableCell>{taller.pais}</TableCell>
                         <TableCell>{taller.centroEducativo}</TableCell>
-                        <TableCell>{taller.docente}{taller.pendienteBaja &&
-                          <Chip label="Baja pendiente" size="small" color="warning" sx={{ ml: 1 }} />}</TableCell>
+                        <TableCell>{taller.docente}</TableCell>
                         <TableCell align="right">{taller.cantidadAlumnos}</TableCell>
                         <TableCell align="right">{taller.avanceEsperado} clases</TableCell>
                         <TableCell align="right">{textoAvance(taller.avanceReal)}</TableCell>
@@ -440,30 +397,6 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
         </Alert>
       </Snackbar>
 
-      <Dialog open={bajaSeleccionada !== null}
-        onClose={function cerrar() { if (!actualizando) setBajaSeleccionada(null); }}>
-        <DialogTitle>Confirmar eliminación de copia local</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Este taller dejó de aparecer tras una sincronización exitosa. Revisá el detalle antes de confirmar.
-            Se eliminarán de esta aplicación el taller y sus clases guardadas, no los datos de la plataforma.
-          </DialogContentText>
-          {bajaSeleccionada !== null && <Box sx={{ mt: 2 }}>
-            <Typography><strong>Taller:</strong> {bajaSeleccionada.idTaller}</Typography>
-            <Typography><strong>Docente:</strong> {bajaSeleccionada.docente}</Typography>
-            <Typography><strong>Centro educativo:</strong> {bajaSeleccionada.centroEducativo}</Typography>
-            <Typography><strong>Clases realizadas:</strong> {bajaSeleccionada.avanceReal}</Typography>
-            <Typography><strong>Evidencias:</strong> {evidencias[bajaSeleccionada.evidencias]}</Typography>
-          </Box>}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={function cancelar() { setBajaSeleccionada(null); }}
-            disabled={actualizando}>Conservar copia</Button>
-          <Button color="error" variant="contained" onClick={confirmarBaja} disabled={actualizando}>
-            Eliminar copia local
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

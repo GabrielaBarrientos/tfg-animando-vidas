@@ -12,17 +12,22 @@ import org.tfg.backend.empresa.Empresa;
 import org.tfg.backend.empresa.EmpresaRepository;
 
 import java.time.Year;
+import org.tfg.backend.programa.ProgramaService;
+import org.tfg.backend.integration.educationalplatform.PlatformProgramaResponse;
 
 @Service
 public class ProyectoService {
 
     private final ProyectoRepository proyectoRepository;
     private final EmpresaRepository empresaRepository;
+    private final ProgramaService programaService;
 
-    public ProyectoService(ProyectoRepository proyectoRepository, EmpresaRepository empresaRepository) {
+    public ProyectoService(ProyectoRepository proyectoRepository, EmpresaRepository empresaRepository,
+            ProgramaService programaService) {
 
         this.proyectoRepository = proyectoRepository;
         this.empresaRepository = empresaRepository;
+        this.programaService = programaService;
     }
 
     @Transactional
@@ -68,6 +73,10 @@ public class ProyectoService {
             }
         }
 
+        // No se permite crear proyectos sin programa existente y válido en la plataforma.
+        PlatformProgramaResponse programa = programaService.consultarYValidar(
+                nombreProyecto, empresaEncontrada.get().getNombre(), anio);
+
         // Crear y guardar el proyecto
         Proyecto proyecto = new Proyecto(
                 nombreProyecto,
@@ -76,6 +85,8 @@ public class ProyectoService {
                 empresaEncontrada.get()
         );
 
-        return proyectoRepository.save(proyecto);
+        Proyecto guardado = proyectoRepository.save(proyecto);
+        programaService.guardarPrograma(guardado, programa);
+        return guardado;
     }
 }

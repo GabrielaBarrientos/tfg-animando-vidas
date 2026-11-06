@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 import org.tfg.backend.taller.ClaseTaller;
 
 @Entity
-@Table(name = "evidencia")
+@Table(name = "evidencia_taller")
 public class Evidencia {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

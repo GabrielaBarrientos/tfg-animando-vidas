@@ -46,7 +46,7 @@ public class EducationalPlatformClient {
     public List<PlatformTallerResponse> obtenerTalleres(
             String nombreProyecto, Short anioProyecto, String nombreEmpresa) {
         PlatformTallerResponse[] datos = restClient.get()
-                .uri("/proyecto?nombreProyecto={nombreProyecto}&anioProyecto={anioProyecto}&nombreEmpresa={nombreEmpresa}",
+                .uri("/talleres?nombreProyecto={nombreProyecto}&anioProyecto={anioProyecto}&nombreEmpresa={nombreEmpresa}",
                         nombreProyecto, anioProyecto, nombreEmpresa)
                 .retrieve()
                 .body(PlatformTallerResponse[].class);
@@ -56,15 +56,13 @@ public class EducationalPlatformClient {
         return Arrays.asList(datos);
     }
 
-    public PlatformDetalleTallerResponse obtenerDetalleTaller(int idTallerPlataforma) {
-        PlatformDetalleTallerResponse detalle = restClient.get()
-                .uri("/taller?id_taller_plataforma={idTallerPlataforma}", idTallerPlataforma)
-                .retrieve()
-                .body(PlatformDetalleTallerResponse.class);
-        if (detalle == null) {
-            throw new IllegalStateException("La plataforma no devolvió el detalle del taller");
-        }
-        return detalle;
+    public PlatformProgramaResponse obtenerPrograma(String nombreProyecto, String empresa, Short anio) {
+        PlatformProgramaResponse respuesta = restClient.get()
+                .uri("/programas?nombreProyecto={nombreProyecto}&empresa={empresa}&anio={anio}",
+                        nombreProyecto, empresa, anio)
+                .retrieve().body(PlatformProgramaResponse.class);
+        if (respuesta == null) throw new IllegalStateException("La plataforma no devolvió el programa");
+        return respuesta;
     }
 
     public PlatformEncuestasResponse obtenerEncuestas(int idTallerPlataforma) {

@@ -31,6 +31,13 @@ export async function obtenerProyectos(): Promise<Proyecto[]> {
   return proyectos;
 }
 
+export class ConflictoCrearProyectoError extends Error {
+  constructor() {
+    super('No se pudo registrar el proyecto. Revisa los datos ingresados.');
+    this.name = 'ConflictoCrearProyectoError';
+  }
+}
+
 export interface CrearProyectoRequest {
   nombre: string;
   anio: number;
@@ -60,7 +67,17 @@ export async function crearProyecto(datos: CrearProyectoRequest): Promise<Proyec
   await verificarSesionEnRespuesta(respuesta);
 
   if (!respuesta.ok) {
-    throw new Error('No se pudo crear el proyecto');
+    if (respuesta.status === 409) {
+      throw new ConflictoCrearProyectoError();
+    }
+    let detalle = 'No se pudo crear el proyecto';
+    try {
+      const error: { detail?: string; mensaje?: string } = await respuesta.json();
+      detalle = error.detail ?? error.mensaje ?? detalle;
+    } catch {
+      // La respuesta de error puede estar vacía.
+    }
+    throw new Error(detalle);
   }
 
   const proyecto: Proyecto = await respuesta.json();

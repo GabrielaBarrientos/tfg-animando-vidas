@@ -162,10 +162,10 @@ export default function DetalleTallerPage({ proyecto, idTaller, puedeActualizar,
     setActualizando(true);
     setError('');
     try {
-      await sincronizarClasesTaller(proyecto.idProyecto, idTaller);
+      await sincronizarClasesTaller(proyecto.idProyecto);
       const datos = await obtenerDetalleTaller(proyecto.idProyecto, idTaller);
       setDetalle(datos);
-      setAviso('Clases actualizadas correctamente.');
+      setAviso('Talleres y clases actualizados correctamente.');
     } catch (excepcion) {
       if (excepcion instanceof SesionExpiradaError) onSesionExpirada();
       else setError(excepcion instanceof Error ? excepcion.message : 'No se pudieron actualizar las clases.');

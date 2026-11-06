@@ -34,6 +34,12 @@ public class Proyecto {
     @Column(name = "estado", length = 50, nullable = false)
     private EstadoProyecto estado;
 
+    @Column(name = "programa_sincronizado", nullable = false)
+    private boolean programaSincronizado;
+
+    @Column(name = "ultima_sincronizacion_programa")
+    private OffsetDateTime ultimaSincronizacionPrograma;
+
     @Column(name = "ultima_sincronizacion_talleres")
     private OffsetDateTime ultimaSincronizacionTalleres;
 
@@ -73,6 +79,13 @@ public class Proyecto {
     @PreUpdate
     protected void antesDeActualizar() {
         fechaActualizacion = OffsetDateTime.now(ZoneOffset.UTC);
+    }
+
+    public boolean isProgramaSincronizado() { return programaSincronizado; }
+    public OffsetDateTime getUltimaSincronizacionPrograma() { return ultimaSincronizacionPrograma; }
+    public void registrarSincronizacionPrograma(OffsetDateTime instante) {
+        programaSincronizado = true;
+        ultimaSincronizacionPrograma = instante;
     }
 
     public Long getIdProyecto() {

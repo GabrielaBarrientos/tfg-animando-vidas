@@ -98,7 +98,8 @@ public class EvidenciasService {
             validarMetadatos(dato, porExterno, identificadores);
             Optional<Evidencia> anterior = evidencias.findByIdArchivoPlataforma(dato.id_archivo_plataforma());
             if (anterior.isPresent()
-                    && !anterior.get().getClase().getIdClasePlataforma().equals(dato.id_clase_plataforma())) {
+                    && !anterior.get().getClase().getIdClaseTaller().equals(
+                            porExterno.get(dato.id_clase_plataforma()).getIdClaseTaller())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT,
                         "El archivo ya pertenece a otra clase");
             }

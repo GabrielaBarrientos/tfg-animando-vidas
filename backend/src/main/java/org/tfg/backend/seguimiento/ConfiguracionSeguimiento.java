@@ -22,7 +22,7 @@ import org.tfg.backend.proyecto.Proyecto;
 import org.tfg.backend.usuario.Usuario;
 
 @Entity
-@Table(name = "configuracion_seguimiento")
+@Table(name = "configuracion_proyecto")
 public class ConfiguracionSeguimiento {
 
     @Id

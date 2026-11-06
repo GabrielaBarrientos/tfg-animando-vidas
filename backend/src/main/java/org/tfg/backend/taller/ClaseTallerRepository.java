@@ -6,6 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ClaseTallerRepository extends JpaRepository<ClaseTaller, Long> {
     List<ClaseTaller> findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(String idTallerPlataforma);
-    Optional<ClaseTaller> findByIdClasePlataforma(Long idClasePlataforma);
-    void deleteByTaller_IdTallerPlataforma(String idTallerPlataforma);
+    Optional<ClaseTaller> findByTaller_IdTallerAndPrograma_IdPrograma(Long idTaller, Long idPrograma);
 }

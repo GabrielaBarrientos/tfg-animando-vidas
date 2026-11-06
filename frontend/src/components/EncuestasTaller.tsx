@@ -215,9 +215,8 @@ export default function EncuestasTaller({ idProyecto, idTaller, puedeActualizar,
       {!cargando && datos !== null && datos.ultimaSincronizacion === null && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', p: 2 }}>
           Para incorporar respuestas nuevas, utilizá ACTUALIZAR RESPUESTAS.
-          Las preguntas del proyecto se obtienen al actualizar los talleres.
         </Typography>
-      )}
+        )}
       <Snackbar
         open={mensaje !== ''}
         autoHideDuration={5000}

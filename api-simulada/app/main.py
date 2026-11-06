@@ -14,110 +14,7 @@ DETALLES = Path(__file__).parent / "detalle_talleres.json"
 EVIDENCIAS = Path(__file__).parent / "evidencias.json"
 ENCUESTAS = Path(__file__).parent / "encuestas.json"
 ARCHIVOS = Path(__file__).parent / "archivos"
-
-
-class ClasePlataforma(BaseModel):
-    idClasePlataforma: int = Field(ge=1)
-    numeroClase: int = Field(ge=1)
-    fechaRealizacion: date | None = None
-    cantidadParticipantes: int | None = Field(default=None, ge=0)
-    cantidadEvidencias: int = Field(default=0, ge=0)
-    preguntas: list["PreguntaProyectoPlataforma"]
-
-    @model_validator(mode="after")
-    def validar(self):
-        if self.fechaRealizacion is None and (self.cantidadEvidencias != 0 or self.cantidadParticipantes is not None):
-            raise ValueError("Una clase sin realizar no puede tener participantes ni evidencias")
-        if self.fechaRealizacion is not None and self.cantidadParticipantes is None:
-            raise ValueError("Una clase realizada debe informar participantes")
-        return self
-
-
-class PreguntaProyectoPlataforma(BaseModel):
-    idPreguntaPlataforma: int = Field(ge=1)
-    enunciado: str = Field(min_length=1, max_length=10000)
-    tipo: str
-    orden: int = Field(ge=1)
-
-    @model_validator(mode="after")
-    def validar_tipo(self):
-        if self.tipo not in ("introducción", "clase"):
-            raise ValueError("Tipo de pregunta desconocido")
-        if not self.enunciado.strip():
-            raise ValueError("El enunciado no puede estar vacío")
-        return self
-
-
-class TallerPlataforma(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    idTaller: str = Field(min_length=1, max_length=150)
-    nombreProyecto: str = Field(min_length=1)
-    anioProyecto: int = Field(ge=1)
-    nombreEmpresa: str = Field(min_length=1)
-    usuarioPlataforma: str = Field(min_length=8)
-    clases: list[ClasePlataforma]
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "service": "api-simulada"}
-
-
-@app.get("/proyecto", response_model=list[TallerPlataforma])
-def obtener_talleres(
-    nombreProyecto: str = Query(min_length=1),
-    anioProyecto: int = Query(ge=1),
-    nombreEmpresa: str = Query(min_length=1),
-):
-    """Selecciona talleres por datos del proyecto, sin un ID interno ni entidad Proyecto."""
-    try:
-        datos = json.loads(DATOS.read_text(encoding="utf-8"))
-        if not isinstance(datos, list):
-            raise ValueError("Los datos simulados deben contener una lista de talleres")
-
-        coincidencias = []
-        identificadores_clases = set()
-        catalogo_referencia = None
-        for dato in datos:
-            if not isinstance(dato, dict):
-                raise ValueError("Cada taller debe ser un objeto")
-            if (dato.get("nombreProyecto") == nombreProyecto
-                    and dato.get("anioProyecto") == anioProyecto
-                    and dato.get("nombreEmpresa") == nombreEmpresa):
-                taller = TallerPlataforma.model_validate(dato)
-                numeros_clase = set()
-                identificadores_preguntas = set()
-                preguntas_por_clase = {}
-                for clase in taller.clases:
-                    if clase.idClasePlataforma in identificadores_clases:
-                        raise ValueError("Identificador externo de clase repetido en el proyecto")
-                    if clase.numeroClase in numeros_clase:
-                        raise ValueError("Número de clase repetido en un taller")
-                    identificadores_clases.add(clase.idClasePlataforma)
-                    numeros_clase.add(clase.numeroClase)
-                    preguntas_clase = {}
-                    ordenes = set()
-                    for pregunta in clase.preguntas:
-                        if pregunta.idPreguntaPlataforma in identificadores_preguntas:
-                            raise ValueError("Cada pregunta debe tener su propio identificador por clase")
-                        if pregunta.orden in ordenes:
-                            raise ValueError("Dos preguntas de una clase comparten orden")
-                        identificadores_preguntas.add(pregunta.idPreguntaPlataforma)
-                        ordenes.add(pregunta.orden)
-                        preguntas_clase[pregunta.idPreguntaPlataforma] = (
-                            pregunta.enunciado, pregunta.tipo, pregunta.orden
-                        )
-                    if ordenes != set(range(1, len(clase.preguntas) + 1)):
-                        raise ValueError("El orden de cada clase debe ser 1, 2, 3, ...")
-                    preguntas_por_clase[clase.numeroClase] = preguntas_clase
-                if catalogo_referencia is None:
-                    catalogo_referencia = preguntas_por_clase
-                elif preguntas_por_clase != catalogo_referencia:
-                    raise ValueError("Cada clase debe compartir las mismas preguntas entre talleres")
-                coincidencias.append(taller)
-        return coincidencias
-    except (OSError, ValueError) as error:
-        raise HTTPException(status_code=500, detail=f"No se pueden leer los datos simulados: {error}") from error
+PROGRAMAS = Path(__file__).parent / "programas.json"
 
 
 class EstadoClase(str, Enum):
@@ -125,63 +22,149 @@ class EstadoClase(str, Enum):
     PENDIENTE = "Pendiente"
 
 
-class ClaseDetallePlataforma(BaseModel):
+class PreguntaPrograma(BaseModel):
+    idPreguntaPlataforma: int = Field(ge=1)
+    numeroPregunta: int = Field(ge=1)
+    formato: str
+    tipo: str
+    enunciado: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def validar(self):
+        if self.formato != "texto":
+            raise ValueError(f"Formato no admitido en pregunta {self.idPreguntaPlataforma}: {self.formato}")
+        if self.tipo not in ("intro", "clase"):
+            raise ValueError("Tipo de pregunta desconocido")
+        if not self.enunciado.strip():
+            raise ValueError("El enunciado no puede estar vacío")
+        return self
+
+
+class ClasePrograma(BaseModel):
     idClasePlataforma: int = Field(ge=1)
     numeroClase: int = Field(ge=1)
     nombreClase: str = Field(min_length=1)
     nombreModulo: str = Field(min_length=1)
-    estadoClase: EstadoClase
-    fechaRealizacion: date | None = None
-    cantidadParticipantes: int | None = Field(default=None, ge=0)
-    cantidadEvidencias: int | None = Field(default=None, ge=0)
+    pregunta: list[PreguntaPrograma]
 
     @model_validator(mode="after")
-    def validar_estado(self):
-        if self.estadoClase == EstadoClase.REALIZADA:
-            if (self.fechaRealizacion is None or self.cantidadParticipantes is None
-                    or self.cantidadEvidencias is None):
-                raise ValueError("Una clase realizada debe informar fecha, participantes y evidencias")
-        else:
-            if (self.fechaRealizacion is not None or self.cantidadParticipantes is not None
-                    or self.cantidadEvidencias is not None):
-                raise ValueError("Una clase pendiente no debe informar fecha, participantes ni evidencias")
+    def validar(self):
+        if not self.nombreClase.strip() or not self.nombreModulo.strip():
+            raise ValueError("Nombre de clase y módulo obligatorios")
+        ids = set()
+        ordenes = set()
+        for pregunta in self.pregunta:
+            if pregunta.idPreguntaPlataforma in ids or pregunta.numeroPregunta in ordenes:
+                raise ValueError("Preguntas o números de pregunta repetidos")
+            ids.add(pregunta.idPreguntaPlataforma)
+            ordenes.add(pregunta.numeroPregunta)
+        if ordenes != set(range(1, len(self.pregunta) + 1)):
+            raise ValueError("Los números de pregunta deben ser consecutivos")
         return self
 
 
-class DetalleTallerPlataforma(BaseModel):
-    id_taller: int = Field(ge=1)
-    clases: list[ClaseDetallePlataforma]
+class ProgramaPlataforma(BaseModel):
+    clase: list[ClasePrograma] = Field(min_length=1)
 
     @model_validator(mode="after")
-    def validar_numeros_unicos(self):
+    def validar(self):
+        ids = set()
         numeros = set()
-        identificadores = set()
-        for clase in self.clases:
-            if clase.idClasePlataforma in identificadores:
-                raise ValueError("Los identificadores de clase no pueden repetirse")
-            identificadores.add(clase.idClasePlataforma)
-            if clase.numeroClase in numeros:
-                raise ValueError("Los números de clase no pueden repetirse")
+        for clase in self.clase:
+            if clase.idClasePlataforma in ids or clase.numeroClase in numeros:
+                raise ValueError("Clases o números de clase duplicados")
+            ids.add(clase.idClasePlataforma)
             numeros.add(clase.numeroClase)
         return self
 
 
-@app.get("/taller", response_model=DetalleTallerPlataforma)
-def obtener_detalle_taller(id_taller_plataforma: int = Query(ge=1)):
-    """Devuelve las clases de un único taller desde los datos simulados."""
+class ClasePlataforma(BaseModel):
+    idClasePlataforma: int = Field(ge=1)
+    numeroClase: int = Field(ge=1)
+    fechaRealizacion: date | None = None
+    cantidadParticipantes: int = Field(ge=0)
+    cantidadEvidencias: int = Field(ge=0)
+    estado: EstadoClase
+
+    @model_validator(mode="after")
+    def validar(self):
+        if self.estado == EstadoClase.REALIZADA and self.fechaRealizacion is None:
+            raise ValueError("Una clase realizada requiere fecha")
+        if self.estado == EstadoClase.PENDIENTE and (self.fechaRealizacion is not None or
+                self.cantidadParticipantes != 0 or self.cantidadEvidencias != 0):
+            raise ValueError("Una clase pendiente debe tener fecha nula y contadores cero")
+        return self
+
+
+class TallerPlataforma(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    idTallerPlataforma: str = Field(min_length=1, max_length=150)
+    nombreProyecto: str = Field(min_length=1)
+    anioProyecto: int = Field(ge=1)
+    nombreEmpresa: str = Field(min_length=1)
+    usuarioPlataforma: str = Field(min_length=1)
+    clases: list[ClasePlataforma]
+
+    @model_validator(mode="after")
+    def validar(self):
+        ids = set()
+        numeros = set()
+        for clase in self.clases:
+            if clase.idClasePlataforma in ids or clase.numeroClase in numeros:
+                raise ValueError("Clase duplicada en el taller")
+            ids.add(clase.idClasePlataforma)
+            numeros.add(clase.numeroClase)
+        return self
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": "api-simulada"}
+
+
+@app.get("/programas", response_model=ProgramaPlataforma)
+def obtener_programa(nombreProyecto: str = Query(min_length=1),
+                     empresa: str = Query(min_length=1), anio: int = Query(ge=1)):
     try:
-        datos = json.loads(DETALLES.read_text(encoding="utf-8"))
+        datos = json.loads(PROGRAMAS.read_text(encoding="utf-8"))
         if not isinstance(datos, list):
-            raise ValueError("Los detalles simulados deben contener una lista")
+            raise ValueError("La fuente de programas debe contener una lista")
         for dato in datos:
-            if not isinstance(dato, dict):
-                raise ValueError("Cada detalle de taller debe ser un objeto")
-            if dato.get("id_taller") == id_taller_plataforma:
-                return DetalleTallerPlataforma.model_validate(dato)
-        raise HTTPException(status_code=404, detail="Taller no encontrado en plataforma")
+            if (dato.get("nombreProyecto") == nombreProyecto and
+                    dato.get("empresa") == empresa and dato.get("anio") == anio):
+                return ProgramaPlataforma.model_validate({"clase": dato["clase"]})
+        raise HTTPException(status_code=404, detail="El programa no existe en la plataforma educativa")
+    except (OSError, ValueError, KeyError) as error:
+        raise HTTPException(status_code=502, detail=f"Programa inválido: {error}") from error
+
+
+@app.get("/talleres", response_model=list[TallerPlataforma])
+def obtener_talleres(nombreProyecto: str = Query(min_length=1),
+                    anioProyecto: int = Query(ge=1), nombreEmpresa: str = Query(min_length=1)):
+    try:
+        datos = json.loads(DATOS.read_text(encoding="utf-8"))
+        if not isinstance(datos, list):
+            raise ValueError("La fuente de talleres debe contener una lista")
+        resultado = []
+        ids_talleres = set()
+        referencia_clases = None
+        for dato in datos:
+            if (dato.get("nombreProyecto") == nombreProyecto and
+                    dato.get("anioProyecto") == anioProyecto and
+                    dato.get("nombreEmpresa") == nombreEmpresa):
+                taller = TallerPlataforma.model_validate(dato)
+                if taller.idTallerPlataforma in ids_talleres:
+                    raise ValueError("Identificador de taller repetido")
+                ids_talleres.add(taller.idTallerPlataforma)
+                definiciones = {(c.idClasePlataforma, c.numeroClase) for c in taller.clases}
+                if referencia_clases is None:
+                    referencia_clases = definiciones
+                elif referencia_clases != definiciones:
+                    raise ValueError("Los talleres no comparten las mismas clases del programa")
+                resultado.append(taller)
+        return resultado
     except (OSError, ValueError) as error:
-        raise HTTPException(status_code=500,
-                            detail=f"No se pueden leer los detalles simulados: {error}") from error
+        raise HTTPException(status_code=502, detail=f"Talleres inválidos: {error}") from error
 
 
 # Evidencias: la API educativa real obtiene estos metadatos de su BD;
@@ -255,7 +238,7 @@ def descargar_archivo_plataforma(id_archivo_plataforma: int):
     raise HTTPException(status_code=404, detail="Archivo inexistente")
 
 
-# Respuestas de encuestas por clase: las preguntas se obtienen de GET /proyecto.
+# Respuestas por clase: definiciones de preguntas provienen de GET /programas.
 class RespuestaEncuestaPlataforma(BaseModel):
     idTallerPlataforma: int = Field(ge=1)
     idClasePlataforma: int = Field(ge=1)

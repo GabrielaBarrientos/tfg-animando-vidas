@@ -42,23 +42,5 @@ public class TallerController {
         return new SincronizacionResponse(cantidad);
     }
 
-    @PostMapping("/{idTaller}/clases/sincronizar")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
-    public SincronizacionClasesResponse sincronizarClases(@PathVariable Long idProyecto,
-            @PathVariable String idTaller, @AuthenticationPrincipal OidcUser usuarioGoogle) {
-        int cantidad = tallerService.sincronizarClases(idProyecto, idTaller, usuarioGoogle);
-        return new SincronizacionClasesResponse(cantidad);
-    }
-
-    @DeleteMapping("/{idTaller}/copia-local")
-    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
-    public org.springframework.http.ResponseEntity<Void> eliminarCopiaLocal(
-            @PathVariable Long idProyecto, @PathVariable String idTaller,
-            @AuthenticationPrincipal OidcUser usuarioGoogle) {
-        tallerService.eliminarCopiaLocal(idProyecto, idTaller, usuarioGoogle);
-        return org.springframework.http.ResponseEntity.noContent().build();
-    }
-
     public record SincronizacionResponse(int cantidadTalleres) { }
-    public record SincronizacionClasesResponse(int cantidadClases) { }
 }

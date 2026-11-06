@@ -102,4 +102,25 @@ class EvidenciasServiceTests {
         verify(evidencias).save(existente);
     }
 
+    @Test
+    void rechazaArchivoDeOtroTallerAunqueCompartaIdentificadorDeClase() {
+        when(clases.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc("8"))
+                .thenReturn(List.of(clase));
+        when(plataforma.obtenerEvidencias(8)).thenReturn(new PlatformEvidenciasResponse(8,
+                List.of(new PlatformEvidenciasResponse.ArchivoPlataforma(
+                        15L, 8L, "foto.jpg", "image/jpeg", 50L))));
+        ClaseTaller claseOtroTaller = mock(ClaseTaller.class);
+        when(claseOtroTaller.getIdClaseTaller()).thenReturn(200L);
+        Evidencia ajena = new Evidencia(claseOtroTaller, 15L, "foto.jpg", "image/jpeg", 50L,
+                OffsetDateTime.now(ZoneOffset.UTC));
+        when(evidencias.findByIdArchivoPlataforma(15L)).thenReturn(Optional.of(ajena));
+        try {
+            servicio.sincronizar(20L, "8", usuario);
+            fail("Se esperaba rechazo del archivo de otro taller");
+        } catch (ResponseStatusException error) {
+            assertEquals(409, error.getStatusCode().value());
+        }
+        verify(evidencias, never()).save(any(Evidencia.class));
+    }
+
 }

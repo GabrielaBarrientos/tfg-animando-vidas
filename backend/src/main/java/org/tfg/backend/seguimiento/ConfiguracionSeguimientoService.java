@@ -60,11 +60,22 @@ public class ConfiguracionSeguimientoService {
     @Transactional(readOnly = true)
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ConfiguracionSeguimientoResponse obtener(Long idProyecto) {
-        buscarProyecto(idProyecto);
+        Proyecto proyecto = buscarProyecto(idProyecto);
 
         Optional<ConfiguracionSeguimiento> encontrada = seguimientoRepository.findByProyecto_IdProyecto(idProyecto);
         if (encontrada.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Configuración de seguimiento no encontrada");
+            return new ConfiguracionSeguimientoResponse(
+                    null,
+                    proyecto.getIdProyecto(),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    proyecto.getEstado(),
+                    false);
         }
 
         return convertirRespuesta(encontrada.get());
@@ -184,6 +195,7 @@ public class ConfiguracionSeguimientoService {
                 configuracion.getResponsableProyecto().getIdUsuario(),
                 configuracion.getTipoDiaInformeMensual(),
                 configuracion.getDiaInformeMensual(),
-                configuracion.getProyecto().getEstado());
+                configuracion.getProyecto().getEstado(),
+                true);
     }
 }

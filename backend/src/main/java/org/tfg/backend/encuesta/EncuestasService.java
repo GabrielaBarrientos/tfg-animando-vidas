@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.tfg.backend.integration.educationalplatform.EducationalPlatformClient;
 import org.tfg.backend.integration.educationalplatform.PlatformEncuestasResponse;
+import org.tfg.backend.proyecto.Proyecto;
 import org.tfg.backend.taller.ClaseTaller;
 import org.tfg.backend.taller.ClaseTallerRepository;
 import org.tfg.backend.taller.Taller;
@@ -26,17 +27,15 @@ public class EncuestasService {
     private final TallerService talleres;
     private final ClaseTallerRepository clases;
     private final PreguntaProyectoRepository preguntas;
-    private final EncuestaTallerRepository encuestas;
-    private final RespuestaEncuestaRepository respuestas;
+    private final RespuestaTallerRepository respuestas;
     private final EducationalPlatformClient plataforma;
 
     public EncuestasService(TallerService talleres, ClaseTallerRepository clases,
-            PreguntaProyectoRepository preguntas, EncuestaTallerRepository encuestas,
-            RespuestaEncuestaRepository respuestas, EducationalPlatformClient plataforma) {
+            PreguntaProyectoRepository preguntas, RespuestaTallerRepository respuestas,
+            EducationalPlatformClient plataforma) {
         this.talleres = talleres;
         this.clases = clases;
         this.preguntas = preguntas;
-        this.encuestas = encuestas;
         this.respuestas = respuestas;
         this.plataforma = plataforma;
     }
@@ -46,28 +45,20 @@ public class EncuestasService {
     public EncuestasTallerResponse consultar(Long idProyecto, String idTaller, OidcUser usuario) {
         Taller taller = talleres.buscarTallerAutorizado(idProyecto, idTaller, usuario);
         List<ClaseTaller> clasesLocales = clases.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller);
-        List<RespuestaEncuesta> respuestasLocales = respuestas.buscarPorTaller(taller.getIdTaller());
         Map<Long, List<EncuestasTallerResponse.PreguntaRespuesta>> porClase = new HashMap<>();
-        for (RespuestaEncuesta respuesta : respuestasLocales) {
-            Long idClase = respuesta.getEncuesta().getClase().getIdClaseTaller();
-            List<EncuestasTallerResponse.PreguntaRespuesta> items = porClase.get(idClase);
-            if (items == null) {
-                items = new ArrayList<>();
-                porClase.put(idClase, items);
-            }
+        for (RespuestaTaller respuesta : respuestas.buscarPorTaller(taller.getIdTaller())) {
             PreguntaProyecto pregunta = respuesta.getPregunta();
-            // Las introducciones se conservan para el análisis con IA, pero no se muestran aquí.
-            if (pregunta.getTipo() == TipoPregunta.CLASE) {
-                items.add(new EncuestasTallerResponse.PreguntaRespuesta(pregunta.getIdPreguntaProyecto(),
-                        pregunta.getEnunciado(), "clase", respuesta.getValorRespuesta()));
-            }
+            if (pregunta.getTipo() != TipoPregunta.CLASE) continue;
+            Long idClase = respuesta.getClase().getIdClaseTaller();
+            List<EncuestasTallerResponse.PreguntaRespuesta> items = porClase.get(idClase);
+            if (items == null) { items = new ArrayList<>(); porClase.put(idClase, items); }
+            items.add(new EncuestasTallerResponse.PreguntaRespuesta(pregunta.getIdPreguntaProyecto(),
+                    pregunta.getEnunciado(), "clase", respuesta.getValorRespuesta()));
         }
         List<EncuestasTallerResponse.Clase> resultado = new ArrayList<>();
         for (ClaseTaller clase : clasesLocales) {
             List<EncuestasTallerResponse.PreguntaRespuesta> items = porClase.get(clase.getIdClaseTaller());
-            if (items == null) {
-                items = new ArrayList<>();
-            }
+            if (items == null) items = new ArrayList<>();
             resultado.add(new EncuestasTallerResponse.Clase(clase.getIdClaseTaller(),
                     clase.getNumeroClase(), clase.getNombreClase(), clase.getEstadoClase().name(), items));
         }
@@ -78,120 +69,73 @@ public class EncuestasService {
     @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'OPERATIVO')")
     public int sincronizar(Long idProyecto, String idTaller, OidcUser usuario) {
         Taller taller = talleres.buscarTallerAutorizado(idProyecto, idTaller, usuario);
-        if (taller.isPendienteBaja()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El taller está pendiente de baja");
-        }
-        int idRemoto = convertirIdentificador(taller.getIdTallerPlataforma());
+        Proyecto proyecto = taller.getAsignacion().getProyecto();
+        if (!proyecto.isProgramaSincronizado()) throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Para actualizar respuestas, primero sincronizá el programa del proyecto");
         PlatformEncuestasResponse remoto;
+        int idRemoto = convertirIdentificador(taller.getIdTallerPlataforma());
         try {
             remoto = plataforma.obtenerEncuestas(idRemoto);
-        } catch (Exception excepcion) {
+        } catch (Exception error) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "No se pudieron consultar las encuestas de la plataforma educativa", excepcion);
+                    "No se pudieron consultar las respuestas de la plataforma", error);
         }
-        if (remoto == null || remoto.idTallerPlataforma() == null || remoto.idTallerPlataforma() != idRemoto
-                || remoto.respuestas() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "La plataforma devolvió encuestas incompletas o de otro taller");
+        if (remoto == null || remoto.idTallerPlataforma() == null
+                || remoto.idTallerPlataforma() != idRemoto || remoto.respuestas() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuestas incompletas o de otro taller");
         }
-        Map<Long, ClaseTaller> clasesPorExterno = indexarClases(idTaller);
-        Map<Long, PreguntaProyecto> preguntasPorExterno = indexarPreguntas(idProyecto);
-        validarRespuestas(remoto, clasesPorExterno, preguntasPorExterno);
-
-        OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
-        Map<Long, EncuestaTaller> encuestasPorClase = new HashMap<>();
-        for (EncuestaTaller encuesta : encuestas.findByClase_Taller_IdTaller(taller.getIdTaller())) {
-            encuestasPorClase.put(encuesta.getClase().getIdClaseTaller(), encuesta);
+        Map<Long, ClaseTaller> clasesPorId = new HashMap<>();
+        for (ClaseTaller clase : clases.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller)) {
+            clasesPorId.put(clase.getIdClasePlataforma(), clase);
         }
-        Map<String, RespuestaEncuesta> respuestasAnteriores = new HashMap<>();
-        for (RespuestaEncuesta respuesta : respuestas.buscarPorTaller(taller.getIdTaller())) {
-            String clave = claveRespuesta(respuesta.getEncuesta().getClase().getIdClasePlataforma(),
-                    respuesta.getPregunta().getIdPreguntaPlataforma());
-            respuestasAnteriores.put(clave, respuesta);
+        Map<String, PreguntaProyecto> preguntasPorId = new HashMap<>();
+        for (PreguntaProyecto pregunta : preguntas.findByProyecto_IdProyectoOrderByIdPreguntaProyectoAsc(idProyecto)) {
+            String clave = pregunta.getPrograma().getIdClasePlataforma() + ":" + pregunta.getIdPreguntaPlataforma();
+            preguntasPorId.put(clave, pregunta);
         }
-        for (PlatformEncuestasResponse.Respuesta dato : remoto.respuestas()) {
-            ClaseTaller clase = clasesPorExterno.get(dato.idClasePlataforma());
-            PreguntaProyecto pregunta = preguntasPorExterno.get(dato.idPreguntaPlataforma());
-            EncuestaTaller encuesta = encuestasPorClase.get(clase.getIdClaseTaller());
-            if (encuesta == null) {
-                encuesta = encuestas.save(new EncuestaTaller(clase, instante));
-                encuestasPorClase.put(clase.getIdClaseTaller(), encuesta);
-            } else {
-                encuesta.registrarSincronizacion(instante);
+        Set<String> recibidas = new HashSet<>();
+        for (PlatformEncuestasResponse.Respuesta item : remoto.respuestas()) {
+            if (item == null || item.idTallerPlataforma() == null || item.idTallerPlataforma() != idRemoto
+                    || item.idClasePlataforma() == null || item.idPreguntaPlataforma() == null
+                    || item.respuesta() == null || item.respuesta().isBlank() || item.respuesta().length() > 20000) {
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "La plataforma devolvió una respuesta inválida");
             }
-            String clave = claveRespuesta(dato.idClasePlataforma(), dato.idPreguntaPlataforma());
-            RespuestaEncuesta respuesta = respuestasAnteriores.get(clave);
+            String clave = item.idClasePlataforma() + ":" + item.idPreguntaPlataforma();
+            if (!clasesPorId.containsKey(item.idClasePlataforma()) || !preguntasPorId.containsKey(clave)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "La respuesta " + clave + " no corresponde a una clase/pregunta sincronizada del programa");
+            }
+            if (!recibidas.add(clave)) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "La plataforma devolvió una respuesta duplicada: " + clave);
+        }
+        Map<String, RespuestaTaller> anteriores = new HashMap<>();
+        for (RespuestaTaller existente : respuestas.buscarPorTaller(taller.getIdTaller())) {
+            String clave = existente.getClase().getIdClasePlataforma() + ":" + existente.getPregunta().getIdPreguntaPlataforma();
+            anteriores.put(clave, existente);
+        }
+        OffsetDateTime instante = OffsetDateTime.now(ZoneOffset.UTC);
+        for (PlatformEncuestasResponse.Respuesta item : remoto.respuestas()) {
+            String clave = item.idClasePlataforma() + ":" + item.idPreguntaPlataforma();
+            RespuestaTaller respuesta = anteriores.get(clave);
             if (respuesta == null) {
-                respuesta = new RespuestaEncuesta(encuesta, pregunta, dato.respuesta(), instante);
+                respuesta = new RespuestaTaller(clasesPorId.get(item.idClasePlataforma()),
+                        preguntasPorId.get(clave), item.respuesta(), instante);
             } else {
-                respuesta.actualizar(dato.respuesta(), instante);
+                respuesta.actualizar(item.respuesta(), instante);
             }
             respuestas.save(respuesta);
         }
-        // Una respuesta ausente no se elimina: se conserva la información ya sincronizada.
         taller.registrarSincronizacionEncuestas(instante);
         return remoto.respuestas().size();
     }
 
-    private Map<Long, ClaseTaller> indexarClases(String idTaller) {
-        Map<Long, ClaseTaller> indexadas = new HashMap<>();
-        for (ClaseTaller clase : clases.findByTaller_IdTallerPlataformaOrderByNumeroClaseAsc(idTaller)) {
-            if (clase.getIdClasePlataforma() != null) {
-                indexadas.put(clase.getIdClasePlataforma(), clase);
-            }
-        }
-        return indexadas;
-    }
-
-    private Map<Long, PreguntaProyecto> indexarPreguntas(Long idProyecto) {
-        Map<Long, PreguntaProyecto> indexadas = new HashMap<>();
-        for (PreguntaProyecto pregunta : preguntas.findByProyecto_IdProyectoOrderByIdPreguntaProyectoAsc(idProyecto)) {
-            indexadas.put(pregunta.getIdPreguntaPlataforma(), pregunta);
-        }
-        return indexadas;
-    }
-
-    private void validarRespuestas(PlatformEncuestasResponse remoto, Map<Long, ClaseTaller> clases,
-            Map<Long, PreguntaProyecto> preguntas) {
-        Set<String> recibidas = new HashSet<>();
-        for (PlatformEncuestasResponse.Respuesta dato : remoto.respuestas()) {
-            if (dato == null || dato.idTallerPlataforma() == null
-                    || !dato.idTallerPlataforma().equals(remoto.idTallerPlataforma())
-                    || dato.idClasePlataforma() == null || dato.idClasePlataforma() <= 0
-                    || dato.idPreguntaPlataforma() == null || dato.idPreguntaPlataforma() <= 0
-                    || dato.respuesta() == null || dato.respuesta().isBlank()
-                    || dato.respuesta().length() > 20000) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Respuesta de encuesta inválida");
-            }
-            if (!clases.containsKey(dato.idClasePlataforma())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Actualizá primero las clases del taller para asociar sus encuestas");
-            }
-            if (!preguntas.containsKey(dato.idPreguntaPlataforma())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Actualizá primero los talleres del proyecto para obtener sus preguntas");
-            }
-            if (!recibidas.add(claveRespuesta(dato.idClasePlataforma(), dato.idPreguntaPlataforma()))) {
-                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                        "La plataforma devolvió dos respuestas para una misma pregunta y clase");
-            }
-        }
-    }
-
-    private String claveRespuesta(Long clase, Long pregunta) {
-        return clase + ":" + pregunta;
-    }
-
     private int convertirIdentificador(String externo) {
         try {
-            int id = Integer.parseInt(externo);
-            if (id > 0) {
-                return id;
-            }
-        } catch (NumberFormatException excepcion) {
-            // No se pueden consultar encuestas con un identificador no numérico.
+            int resultado = Integer.parseInt(externo);
+            if (resultado > 0) return resultado;
+        } catch (NumberFormatException error) {
+            // El contrato externo exige un identificador numérico.
         }
-        throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "El identificador externo del taller debe ser numérico");
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Identificador externo de taller inválido");
     }
 }

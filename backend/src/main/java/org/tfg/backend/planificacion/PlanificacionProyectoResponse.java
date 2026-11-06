@@ -10,6 +10,7 @@ public record PlanificacionProyectoResponse(
         LocalDate fechaFinalizacion,
         Integer cantidadClases,
         FrecuenciaClases frecuenciaClases,
-        long duracionMeses
+        Long duracionMeses,
+        boolean configurada
     ) {
 }

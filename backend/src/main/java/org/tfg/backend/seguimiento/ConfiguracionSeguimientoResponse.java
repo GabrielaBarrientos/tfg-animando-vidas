@@ -12,5 +12,6 @@ public record ConfiguracionSeguimientoResponse(
         Long idResponsableProyecto,
         TipoDiaInformeMensual tipoDiaInformeMensual,
         Integer diaInformeMensual,
-        EstadoProyecto estadoProyecto) {
+        EstadoProyecto estadoProyecto,
+        boolean configurada) {
 }
