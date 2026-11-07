@@ -234,7 +234,9 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
   const estadoProyecto = metadatos?.estadoProyecto ?? proyecto.estado;
 
   return (
-    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', padding: '12px 24px' }}>
+    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', padding: '12px 24px 0',
+      height: 'calc(100dvh - 48px)', minHeight: 400,
+      display: 'flex', flexDirection: 'column' }}>
       <Breadcrumbs separator={<ChevronRightIcon sx={{ fontSize: 16, color: '#667085' }} />} sx={{ mb: 2 }}>
         <Link component="button" type="button" underline="hover" onClick={onVolverAlListado}
           sx={{ color: '#667085', fontSize: 14 }}>Inicio</Link>
@@ -253,7 +255,7 @@ export default function TalleresProyectoPage({ proyecto, puedeActualizar,
             fontSize: 14, fontWeight: 500 }} />
       </Box>
 
-      <Paper sx={{ height: 'calc(100dvh - 195px)', minHeight: 320,
+      <Paper sx={{ flex: 1, minHeight: 320,
         display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <ProyectoTabs valor="talleres" onCambiar={onSeleccionarSolapa} />
         <Box sx={{ padding: '12px 24px', flex: 1, minHeight: 0, overflowY: 'auto' }}>

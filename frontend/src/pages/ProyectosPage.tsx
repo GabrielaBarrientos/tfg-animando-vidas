@@ -208,8 +208,14 @@ function ProyectosPage({
       component="section"
       sx={{
         px: 4,
-        py: 2,
-        width: '100%'
+        pt: 2,
+        pb: 0,
+        width: '100%',
+        boxSizing: 'border-box',
+        height: 'calc(100dvh - 48px)',
+        minHeight: 400,
+        display: 'flex',
+        flexDirection: 'column'
       }}
     >
 
@@ -237,9 +243,10 @@ function ProyectosPage({
       <Paper
         elevation={1}
         sx={{
-          minHeight: 'calc(100vh - 204px)',
+          flex: 1,
+          minHeight: 0,
           borderRadius: 1,
-          overflow: 'hidden'
+          overflow: 'auto'
         }}
       >
 

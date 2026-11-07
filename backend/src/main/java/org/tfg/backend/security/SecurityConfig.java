@@ -25,8 +25,10 @@ public class SecurityConfig {
                 .userInfoEndpoint(userInfo -> userInfo
                     .oidcUserService(oidcUserService))
                 .defaultSuccessUrl("http://localhost:5173/", true)
+                .failureHandler(new OAuth2LoginFailureHandler())
             )
             .exceptionHandling(new ApiExceptionHandlingCustomizer())
+            .logout(new LogoutSecurityCustomizer())
             .csrf(Customizer.withDefaults());
 
         return http.build();

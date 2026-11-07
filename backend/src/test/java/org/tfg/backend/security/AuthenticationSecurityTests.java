@@ -11,12 +11,17 @@ import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.mock.web.MockHttpSession;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.tfg.backend.web.AuthController;
 import org.tfg.backend.web.HealthController;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.oidcLogin;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -104,6 +109,37 @@ class AuthenticationSecurityTests {
 
         mockMvc.perform(get("/api/proyectos"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logoutSinTokenCsrfEsRechazado() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(oidcLogin().authorities(
+                                new SimpleGrantedAuthority("ROLE_ADMINISTRADOR"))))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void logoutConTokenCsrfInvalidaSesionYRespondeNoContent() throws Exception {
+        MockHttpSession session = new MockHttpSession();
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .session(session)
+                        .with(oidcLogin().authorities(
+                                new SimpleGrantedAuthority("ROLE_ADMINISTRADOR")))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
+
+        assertTrue(session.isInvalid(), "El logout debe invalidar la sesion HTTP");
+    }
+
+    @Test
+    void logoutEstaDisponibleTambienParaUsuarioExterno() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .with(oidcLogin().authorities(
+                                new SimpleGrantedAuthority("ROLE_EXTERNO")))
+                        .with(csrf()))
+                .andExpect(status().isNoContent());
     }
 
     @Test

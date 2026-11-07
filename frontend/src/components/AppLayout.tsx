@@ -2,8 +2,10 @@
 import { useState, type ReactNode } from 'react';
 
 import {
+  Alert,
   AppBar,
   Box,
+  Button,
   Drawer,
   IconButton,
   List,
@@ -20,6 +22,7 @@ import TableRowsIcon from '@mui/icons-material/TableRows';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 import { colores } from '../theme';
 import type { UsuarioActual } from '../services/authApi';
@@ -27,6 +30,7 @@ import type { UsuarioActual } from '../services/authApi';
 interface AppLayoutProps {
   usuario: UsuarioActual;
   onIrAProyectos: () => void;
+  onCerrarSesion: () => Promise<void>;
   children: ReactNode;
 }
 
@@ -37,11 +41,14 @@ const altoBarraSuperior = 48;
 function AppLayout({
   usuario,
   onIrAProyectos,
+  onCerrarSesion,
   children
 }: AppLayoutProps) {
 
   // Estado del menú lateral.
   const [menuExpandido, setMenuExpandido] = useState(true);
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
+  const [errorCierreSesion, setErrorCierreSesion] = useState('');
 
   // Ancho actual del menú según su estado.
   const anchoMenu = menuExpandido
@@ -50,6 +57,20 @@ function AppLayout({
 
   function alternarMenu() {
     setMenuExpandido(!menuExpandido);
+  }
+
+  async function solicitarCierreSesion() {
+    if (cerrandoSesion) return;
+
+    setErrorCierreSesion('');
+    setCerrandoSesion(true);
+
+    try {
+      await onCerrarSesion();
+    } catch {
+      setErrorCierreSesion('No se pudo cerrar la sesión. Intentá nuevamente.');
+      setCerrandoSesion(false);
+    }
   }
 
   return (
@@ -313,6 +334,37 @@ function AppLayout({
                   <AccountCircleIcon />
                 </Box>
               </Tooltip>
+            )}
+
+            <Tooltip title={menuExpandido ? '' : 'Cerrar sesión'} placement="right">
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  type="button"
+                  onClick={() => { void solicitarCierreSesion(); }}
+                  disabled={cerrandoSesion}
+                  aria-label="Cerrar sesión"
+                  startIcon={menuExpandido ? <LogoutIcon /> : undefined}
+                  sx={{
+                    width: '100%',
+                    minWidth: 40,
+                    minHeight: 40,
+                    justifyContent: menuExpandido ? 'flex-start' : 'center',
+                    color: colores.blanco,
+                    textTransform: 'none',
+                    fontSize: 14,
+                    px: menuExpandido ? 1 : 0,
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.12)' },
+                    '&.Mui-disabled': { color: 'rgba(255,255,255,0.5)' }
+                  }}
+                >
+                  {menuExpandido ? (cerrandoSesion ? 'Cerrando sesión...' : 'Cerrar sesión') : <LogoutIcon />}
+                </Button>
+              </Box>
+            </Tooltip>
+            {errorCierreSesion !== '' && (
+              <Alert severity="error" role="alert" sx={{ mt: 1, fontSize: 12 }}>
+                {errorCierreSesion}
+              </Alert>
             )}
           </Box>
 
