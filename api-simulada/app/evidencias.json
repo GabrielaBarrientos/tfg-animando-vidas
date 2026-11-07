@@ -3,10 +3,10 @@
     "id_taller_plataforma": 8,
     "id_archivo_plataforma": 1,
     "id_clase_plataforma": 8,
-    "nombre_fisico": "evidencia j.opazo.jpg",
+    "nombre_fisico": "clase_2_evidencia_1.jpg",
     "ruta": "taller_8/clase_2",
     "mime_type": "image/jpeg",
-    "tamaño": 145382
+    "tamaño": 70758
   },
   {
     "id_taller_plataforma": 8,
@@ -15,7 +15,7 @@
     "nombre_fisico": "clase_2_evidencia_2.jpg",
     "ruta": "taller_8/clase_2",
     "mime_type": "image/jpeg",
-    "tamaño": 11412
+    "tamaño": 85882
   },
   {
     "id_taller_plataforma": 8,
@@ -24,7 +24,7 @@
     "nombre_fisico": "clase_2_evidencia_3.jpg",
     "ruta": "taller_8/clase_2",
     "mime_type": "image/jpeg",
-    "tamaño": 11117
+    "tamaño": 78129
   },
   {
     "id_taller_plataforma": 8,
@@ -33,7 +33,7 @@
     "nombre_fisico": "clase_3_evidencia_1.jpg",
     "ruta": "taller_8/clase_3",
     "mime_type": "image/jpeg",
-    "tamaño": 11142
+    "tamaño": 102723
   },
   {
     "id_taller_plataforma": 8,
@@ -42,16 +42,7 @@
     "nombre_fisico": "clase_3_evidencia_2.jpg",
     "ruta": "taller_8/clase_3",
     "mime_type": "image/jpeg",
-    "tamaño": 11407
-  },
-  {
-    "id_taller_plataforma": 8,
-    "id_archivo_plataforma": 6,
-    "id_clase_plataforma": 9,
-    "nombre_fisico": "clase_3_evidencia_3.jpg",
-    "ruta": "taller_8/clase_3",
-    "mime_type": "image/jpeg",
-    "tamaño": 11118
+    "tamaño": 130578
   },
   {
     "id_taller_plataforma": 8,
@@ -60,7 +51,7 @@
     "nombre_fisico": "clase_4_evidencia_1.jpg",
     "ruta": "taller_8/clase_4",
     "mime_type": "image/jpeg",
-    "tamaño": 11158
+    "tamaño": 65640
   },
   {
     "id_taller_plataforma": 8,
@@ -69,7 +60,7 @@
     "nombre_fisico": "clase_4_evidencia_2.jpg",
     "ruta": "taller_8/clase_4",
     "mime_type": "image/jpeg",
-    "tamaño": 11038
+    "tamaño": 92163
   },
   {
     "id_taller_plataforma": 8,
@@ -78,7 +69,7 @@
     "nombre_fisico": "clase_5_evidencia_1.jpg",
     "ruta": "taller_8/clase_5",
     "mime_type": "image/jpeg",
-    "tamaño": 10827
+    "tamaño": 39874
   },
   {
     "id_taller_plataforma": 8,
@@ -87,7 +78,7 @@
     "nombre_fisico": "clase_5_evidencia_2.jpg",
     "ruta": "taller_8/clase_5",
     "mime_type": "image/jpeg",
-    "tamaño": 11010
+    "tamaño": 118082
   },
   {
     "id_taller_plataforma": 8,
@@ -96,7 +87,7 @@
     "nombre_fisico": "clase_6_evidencia_1.jpg",
     "ruta": "taller_8/clase_6",
     "mime_type": "image/jpeg",
-    "tamaño": 10890
+    "tamaño": 113467
   },
   {
     "id_taller_plataforma": 8,
@@ -105,7 +96,7 @@
     "nombre_fisico": "clase_6_evidencia_2.jpg",
     "ruta": "taller_8/clase_6",
     "mime_type": "image/jpeg",
-    "tamaño": 10910
+    "tamaño": 84196
   },
   {
     "id_taller_plataforma": 8,
@@ -114,7 +105,7 @@
     "nombre_fisico": "clase_6_evidencia_3.jpg",
     "ruta": "taller_8/clase_6",
     "mime_type": "image/jpeg",
-    "tamaño": 10851
+    "tamaño": 65225
   },
   {
     "id_taller_plataforma": 8,
@@ -123,7 +114,7 @@
     "nombre_fisico": "clase_7_evidencia_1.jpg",
     "ruta": "taller_8/clase_7",
     "mime_type": "image/jpeg",
-    "tamaño": 10797
+    "tamaño": 134493
   },
   {
     "id_taller_plataforma": 8,
@@ -132,7 +123,7 @@
     "nombre_fisico": "clase_7_evidencia_2.jpg",
     "ruta": "taller_8/clase_7",
     "mime_type": "image/jpeg",
-    "tamaño": 10586
+    "tamaño": 116729
   },
   {
     "id_taller_plataforma": 8,
@@ -150,7 +141,7 @@
     "nombre_fisico": "clase_8_evidencia_1.jpg",
     "ruta": "taller_8/clase_8",
     "mime_type": "image/jpeg",
-    "tamaño": 10841
+    "tamaño": 87095
   },
   {
     "id_taller_plataforma": 8,
@@ -159,7 +150,7 @@
     "nombre_fisico": "clase_8_evidencia_2.jpg",
     "ruta": "taller_8/clase_8",
     "mime_type": "image/jpeg",
-    "tamaño": 10672
+    "tamaño": 59234
   },
   {
     "id_taller_plataforma": 8,
@@ -168,6 +159,6 @@
     "nombre_fisico": "clase_8_evidencia_3.jpg",
     "ruta": "taller_8/clase_8",
     "mime_type": "image/jpeg",
-    "tamaño": 10678
+    "tamaño": 115111
   }
 ]
