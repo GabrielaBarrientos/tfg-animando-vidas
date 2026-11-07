@@ -11,14 +11,18 @@ import DocentesProyectoPage from './pages/DocentesProyectoPage';
 import DetalleProyectoPage from './pages/DetalleProyectoPage';
 import TalleresProyectoPage from './pages/TalleresProyectoPage';
 import DetalleTallerPage from './pages/DetalleTallerPage';
+import AccesoPrototipoPage from './pages/AccesoPrototipoPage';
 import type { SolapaProyecto } from './components/ProyectoTabs';
 
-import { Alert, Box, Button, Paper, Snackbar, Typography } from '@mui/material';
+import { Alert, Snackbar } from '@mui/material';
 
 import {
   obtenerUsuarioActual,
+  cerrarSesionEnServidor,
   type UsuarioActual
 } from './services/authApi';
+
+import { SesionExpiradaError } from './services/erroresApi';
 
 import type { Proyecto } from './services/proyectosApi';
 
@@ -81,6 +85,22 @@ function App() {
     void cargarUsuario();
 
   }, []);
+
+  // El logout se confirma en el servidor antes de volver a la pantalla de acceso.
+  async function manejarCerrarSesion(): Promise<void> {
+    try {
+      await cerrarSesionEnServidor();
+    } catch (error) {
+      // Si la sesión ya expiró, no hay sesión local que invalidar.
+      if (!(error instanceof SesionExpiradaError)) {
+        throw error;
+      }
+    }
+
+    setUsuario(null);
+    setSesionExpirada(false);
+    window.location.replace('/?acceso=sesion-cerrada');
+  }
 
   // Navegar al formulario de alta.
   function mostrarAltaProyecto() {
@@ -196,75 +216,18 @@ function App() {
     mostrarPlanificacionProyecto(proyecto);
   }
 
-  // Mientras se verifica la sesión.
+  // Acceso al prototipo: iniciar Google OAuth2 desde una única pantalla.
+  // La selección de cuentas (Pantalla 1.2 de Figma) la presenta Google.
   if (cargandoUsuario) {
-    return <p>Verificando usuario...</p>;
+    return <AccesoPrototipoPage estado="verificando" />;
   }
 
-  // Mostrar una pantalla específica si la sesión expiró.
   if (sesionExpirada) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: 'background.default',
-          p: 2
-        }}
-      >
-        <Paper
-          elevation={1}
-          sx={{
-            p: 4,
-            width: '100%',
-            maxWidth: 440
-          }}
-        >
-          <Typography
-            component="h1"
-            variant="h5"
-            sx={{ mb: 2 }}
-          >
-            Sesión finalizada
-          </Typography>
-
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            sx={{ mb: 3 }}
-          >
-            Tu sesión finalizó. Iniciá sesión nuevamente
-            para continuar trabajando.
-          </Typography>
-
-          <Button
-            component="a"
-            href="http://localhost:8080/oauth2/authorization/google"
-            variant="contained"
-            fullWidth
-          >
-            Iniciar sesión con Google
-          </Button>
-        </Paper>
-      </Box>
-    );
+    return <AccesoPrototipoPage estado="sesion-expirada" />;
   }
 
-  // Usuario no autenticado o no autorizado.
   if (usuario === null) {
-    return (
-      <main>
-        <h1>Acceso a Animando Vidas</h1>
-
-        <p>No se pudo verificar una sesión autorizada.</p>
-
-        <a href="http://localhost:8080/oauth2/authorization/google">
-          Iniciar sesión con Google
-        </a>
-      </main>
-    );
+    return <AccesoPrototipoPage estado="sin-sesion" />;
   }
 
   // Pantalla 3: Alta de proyecto.
@@ -273,6 +236,7 @@ function App() {
       <AppLayout
         usuario={usuario}
         onIrAProyectos={volverAlListado}
+        onCerrarSesion={manejarCerrarSesion}
       >
         <CrearProyectoPage
           onCancelar={volverAlListado}
@@ -290,7 +254,7 @@ function App() {
     proyectoSeleccionado !== null
   ) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <DatosGeneralesProyectoPage
           proyecto={proyectoSeleccionado}
           onIrAPlanificacion={volverAPlanificacion}
@@ -313,6 +277,7 @@ function App() {
       <AppLayout
         usuario={usuario}
         onIrAProyectos={volverAlListado}
+        onCerrarSesion={manejarCerrarSesion}
       >
         <PlanificacionProyectoPage
           proyecto={proyectoSeleccionado}
@@ -331,7 +296,7 @@ function App() {
   if (pantalla === 'seguimiento' && usuario.rol === 'ADMINISTRADOR'
       && proyectoSeleccionado !== null) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <SeguimientoProyectoPage
           proyecto={proyectoSeleccionado}
           enFlujoAlta={enFlujoAlta}
@@ -350,7 +315,7 @@ function App() {
   if (pantalla === 'docentes' && proyectoSeleccionado !== null
       && (usuario.rol === 'ADMINISTRADOR' || usuario.rol === 'OPERATIVO')) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <DocentesProyectoPage
           proyecto={proyectoSeleccionado}
           enFlujoAlta={enFlujoAlta}
@@ -370,7 +335,7 @@ function App() {
   // Pantalla 7: consulta de detalle del proyecto para todos los perfiles autorizados.
   if (pantalla === 'detalle' && proyectoSeleccionado !== null) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <DetalleProyectoPage
           proyecto={proyectoSeleccionado}
           rol={usuario.rol}
@@ -388,7 +353,7 @@ function App() {
 
   if (pantalla === 'talleres' && proyectoSeleccionado !== null) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <TalleresProyectoPage
           proyecto={proyectoSeleccionado}
           puedeActualizar={usuario.rol !== 'EXTERNO'}
@@ -404,7 +369,7 @@ function App() {
 
   if (pantalla === 'detalle-taller' && tallerSeleccionado !== null && proyectoSeleccionado !== null) {
     return (
-      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado}>
+      <AppLayout usuario={usuario} onIrAProyectos={volverAlListado} onCerrarSesion={manejarCerrarSesion}>
         <DetalleTallerPage
           proyecto={proyectoSeleccionado}
           idTaller={tallerSeleccionado}
@@ -423,6 +388,7 @@ function App() {
     <AppLayout
       usuario={usuario}
       onIrAProyectos={volverAlListado}
+      onCerrarSesion={manejarCerrarSesion}
     >
       <ProyectosPage
         key={versionListado}
