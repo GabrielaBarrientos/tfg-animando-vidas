@@ -297,7 +297,9 @@ function DocentesProyectoPage({
   paises.sort(function comparar(a, b) { return a.localeCompare(b, 'es'); });
 
   return (
-    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', px: { xs: 2, md: 4 }, py: 2 }}>
+    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', px: { xs: 2, md: 4 }, pt: 2, pb: 0,
+      minHeight: 'calc(100dvh - 48px)', height: 'calc(100dvh - 48px)',
+      display: 'flex', flexDirection: 'column' }}>
       <Breadcrumbs separator={<ChevronRightIcon sx={{ fontSize: 16 }} />} sx={{ mb: 2 }}>
         <Link component="button" type="button" underline="hover" onClick={onVolverAlListado}
           sx={{ color: '#667085', '&:hover': { color: '#667085' } }}>Inicio</Link>
@@ -344,7 +346,7 @@ function DocentesProyectoPage({
       )}
 
       <Paper elevation={0} sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1,
-        minHeight: 'calc(100vh - 270px)' }}>
+        flexGrow: 1, minHeight: 400 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2,
           flexWrap: 'wrap', mb: 2 }}>
           <Box>

@@ -259,7 +259,9 @@ function DetalleProyectoPage({
   }
 
   return (
-    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', padding: '12px 24px' }}>
+    <Box component="section" sx={{ width: '100%', boxSizing: 'border-box', padding: '12px 24px 0',
+      height: 'calc(100dvh - 48px)', minHeight: 400,
+      display: 'flex', flexDirection: 'column' }}>
       <Breadcrumbs separator={<ChevronRightIcon sx={{ fontSize: 16 }} />} sx={{ mb: 2 }}>
         <Link component="button" type="button" underline="hover" onClick={onVolverAlListado}
           sx={{ color: '#667085', fontSize: 14 }}>Inicio</Link>
@@ -281,7 +283,7 @@ function DetalleProyectoPage({
       </Box>
 
       <Paper sx={{
-        height: 'calc(100dvh - 195px)',
+        flex: 1,
         minHeight: 320,
         display: 'flex',
         flexDirection: 'column',

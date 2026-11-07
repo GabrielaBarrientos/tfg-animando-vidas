@@ -84,7 +84,9 @@ function DatosGeneralesProyectoPage({
   return (
     <Box
       component="section"
-      sx={{ width: '100%', boxSizing: 'border-box', px: { xs: 2, md: 4 }, py: 2 }}
+      sx={{ width: '100%', boxSizing: 'border-box', px: { xs: 2, md: 4 }, pt: 2, pb: 0,
+        minHeight: 'calc(100dvh - 48px)', height: 'calc(100dvh - 48px)',
+        display: 'flex', flexDirection: 'column' }}
     >
       <Breadcrumbs
         separator={<ChevronRightIcon sx={{ fontSize: 16 }} />}
@@ -204,7 +206,7 @@ function DatosGeneralesProyectoPage({
 
       <Paper
         elevation={0}
-        sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1, minHeight: 400 }}
+        sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1, flexGrow: 1, minHeight: 400 }}
       >
         <Typography component="h2" variant="h6" sx={{ mb: 1 }}>
           Datos generales del proyecto

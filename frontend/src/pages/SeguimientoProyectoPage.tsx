@@ -348,7 +348,9 @@ function SeguimientoProyectoPage({
   return (
     <Box
       component="section"
-      sx={{ px: { xs: 2, md: 4 }, py: 2, width: '100%', boxSizing: 'border-box' }}
+      sx={{ px: { xs: 2, md: 4 }, pt: 2, pb: 0, width: '100%', boxSizing: 'border-box',
+        minHeight: 'calc(100dvh - 48px)', height: 'calc(100dvh - 48px)',
+        display: 'flex', flexDirection: 'column' }}
     >
       <Breadcrumbs separator={<ChevronRightIcon sx={{ fontSize: 16 }} />} sx={{ mb: 1.5 }}>
         <Link component="button" type="button" underline="hover" color="inherit" onClick={irAProyectos}>
@@ -452,7 +454,7 @@ function SeguimientoProyectoPage({
         </Paper>
       )}
 
-      <Paper sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1 }} elevation={0}>
+      <Paper sx={{ px: { xs: 2, md: 4 }, py: 2, borderRadius: 1, flexGrow: 1 }} elevation={0}>
         <Typography component="h2" variant="h6">
           Configuración del seguimiento y notificaciones
         </Typography>
